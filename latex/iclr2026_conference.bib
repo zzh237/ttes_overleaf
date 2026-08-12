@@ -1,0 +1,555 @@
+@incollection{Bengio+chapter2007,
+author = {Bengio, Yoshua and LeCun, Yann},
+booktitle = {Large Scale Kernel Machines},
+publisher = {MIT Press},
+title = {Scaling Learning Algorithms Towards {AI}},
+year = {2007}
+}
+
+@article{Hinton06,
+author = {Hinton, Geoffrey E. and Osindero, Simon and Teh, Yee Whye},
+journal = {Neural Computation},
+pages = {1527--1554},
+title = {A Fast Learning Algorithm for Deep Belief Nets},
+volume = {18},
+year = {2006}
+}
+
+@book{goodfellow2016deep,
+title={Deep learning},
+author={Goodfellow, Ian and Bengio, Yoshua and Courville, Aaron and Bengio, Yoshua},
+volume={1},
+year={2016},
+publisher={MIT Press}
+}
+
+% === Cached citations from gather_citations ===
+% ============================================================================
+% Curated references for the (N,Q) excess-risk / LLM-ensemble-weighting paper.
+% Extracted by hand from the prose citations in:
+%   boinf_clean_note.tex, boinf_proof.tex, boinf_buffered_theory_v1.tex
+% (none of those notes used \cite; all references were named inline.)
+%
+% NOTE: verify the Komiyama "Best-of-infinity" entry below before submission —
+% exact title/venue/year/arXiv id could not be confirmed and are placeholders.
+% ============================================================================
+
+% ---- Source paper being reframed -----------------------------------------
+@inproceedings{komiyama2026best,
+  title={Best-of-infinity: Asymptotic performance of test-time llm ensembling},
+  author={Komiyama, Junpei and Oba, Daisuke and Oyamada, Masafumi},
+  booktitle={The Fourteenth International Conference on Learning Representations},
+  year={2026}
+}
+
+% ---- Opinion pools / forecast combination / stacking (framing) -----------
+@article{stone1961opinionpool,
+  title        = {The Opinion Pool},
+  author       = {Stone, M.},
+  journal      = {The Annals of Mathematical Statistics},
+  volume       = {32},
+  number       = {4},
+  pages        = {1339--1342},
+  year         = {1961},
+  publisher    = {Institute of Mathematical Statistics}
+}
+
+@article{genest1986combining,
+  title        = {Combining Probability Distributions: A Critique and an Annotated Bibliography},
+  author       = {Genest, Christian and Zidek, James V.},
+  journal      = {Statistical Science},
+  volume       = {1},
+  number       = {1},
+  pages        = {114--135},
+  year         = {1986}
+}
+
+@article{wolpert1992stacked,
+  title        = {Stacked Generalization},
+  author       = {Wolpert, David H.},
+  journal      = {Neural Networks},
+  volume       = {5},
+  number       = {2},
+  pages        = {241--259},
+  year         = {1992},
+  publisher    = {Elsevier}
+}
+
+@article{breiman1996stacked,
+  title        = {Stacked Regressions},
+  author       = {Breiman, Leo},
+  journal      = {Machine Learning},
+  volume       = {24},
+  number       = {1},
+  pages        = {49--64},
+  year         = {1996},
+  publisher    = {Springer}
+}
+
+@article{bates1969combination,
+  title        = {The Combination of Forecasts},
+  author       = {Bates, J. M. and Granger, C. W. J.},
+  journal      = {Operational Research Quarterly},
+  volume       = {20},
+  number       = {4},
+  pages        = {451--468},
+  year         = {1969}
+}
+
+@article{littlestone1994weighted,
+  title        = {The Weighted Majority Algorithm},
+  author       = {Littlestone, Nick and Warmuth, Manfred K.},
+  journal      = {Information and Computation},
+  volume       = {108},
+  number       = {2},
+  pages        = {212--261},
+  year         = {1994},
+  publisher    = {Elsevier}
+}
+
+% ---- Capacity / VC theory -------------------------------------------------
+@article{blumer1989learnability,
+  title        = {Learnability and the {Vapnik}--{Chervonenkis} Dimension},
+  author       = {Blumer, Anselm and Ehrenfeucht, Andrzej and Haussler, David and Warmuth, Manfred K.},
+  journal      = {Journal of the ACM},
+  volume       = {36},
+  number       = {4},
+  pages        = {929--965},
+  year         = {1989},
+  publisher    = {ACM}
+}
+
+@article{vapnik1971uniform,
+  title        = {On the Uniform Convergence of Relative Frequencies of Events to Their Probabilities},
+  author       = {Vapnik, V. N. and Chervonenkis, A. Ya.},
+  journal      = {Theory of Probability and Its Applications},
+  volume       = {16},
+  number       = {2},
+  pages        = {264--280},
+  year         = {1971}
+}
+
+@article{sauer1972density,
+  title        = {On the Density of Families of Sets},
+  author       = {Sauer, N.},
+  journal      = {Journal of Combinatorial Theory, Series A},
+  volume       = {13},
+  number       = {1},
+  pages        = {145--147},
+  year         = {1972},
+  publisher    = {Elsevier}
+}
+
+@article{shelah1972combinatorial,
+  title        = {A Combinatorial Problem; Stability and Order for Models and Theories in Infinitary Languages},
+  author       = {Shelah, Saharon},
+  journal      = {Pacific Journal of Mathematics},
+  volume       = {41},
+  number       = {1},
+  pages        = {247--261},
+  year         = {1972}
+}
+
+@article{zaslavsky1975facing,
+  title        = {Facing Up to Arrangements: Face-Count Formulas for Partitions of Space by Hyperplanes},
+  author       = {Zaslavsky, Thomas},
+  journal      = {Memoirs of the American Mathematical Society},
+  volume       = {1},
+  number       = {154},
+  year         = {1975}
+}
+
+% ---- Concentration --------------------------------------------------------
+@article{hoeffding1963probability,
+  title        = {Probability Inequalities for Sums of Bounded Random Variables},
+  author       = {Hoeffding, Wassily},
+  journal      = {Journal of the American Statistical Association},
+  volume       = {58},
+  number       = {301},
+  pages        = {13--30},
+  year         = {1963},
+  publisher    = {Taylor \& Francis}
+}
+
+% ---- Margin / low-noise (Tsybakov) rates ----------------------------------
+@article{mammen1999smooth,
+  title        = {Smooth Discrimination Analysis},
+  author       = {Mammen, Enno and Tsybakov, Alexandre B.},
+  journal      = {The Annals of Statistics},
+  volume       = {27},
+  number       = {6},
+  pages        = {1808--1829},
+  year         = {1999}
+}
+
+@article{tsybakov2004optimal,
+  title        = {Optimal Aggregation of Classifiers in Statistical Learning},
+  author       = {Tsybakov, Alexandre B.},
+  journal      = {The Annals of Statistics},
+  volume       = {32},
+  number       = {1},
+  pages        = {135--166},
+  year         = {2004}
+}
+
+@book{tsybakov2009introduction,
+  title        = {Introduction to Nonparametric Estimation},
+  author       = {Tsybakov, Alexandre B.},
+  series       = {Springer Series in Statistics},
+  year         = {2009},
+  publisher    = {Springer}
+}
+
+@article{massart2006risk,
+  title        = {Risk Bounds for Statistical Learning},
+  author       = {Massart, Pascal and N{\'e}d{\'e}lec, {\'E}lodie},
+  journal      = {The Annals of Statistics},
+  volume       = {34},
+  number       = {5},
+  pages        = {2326--2366},
+  year         = {2006}
+}
+
+% ---- Local Rademacher / localized fast rates ------------------------------
+@article{bartlett2005local,
+  title        = {Local {Rademacher} Complexities},
+  author       = {Bartlett, Peter L. and Bousquet, Olivier and Mendelson, Shahar},
+  journal      = {The Annals of Statistics},
+  volume       = {33},
+  number       = {4},
+  pages        = {1497--1537},
+  year         = {2005}
+}
+
+@article{koltchinskii2006local,
+  title        = {Local {Rademacher} Complexities and Oracle Inequalities in Risk Minimization},
+  author       = {Koltchinskii, Vladimir},
+  journal      = {The Annals of Statistics},
+  volume       = {34},
+  number       = {6},
+  pages        = {2593--2656},
+  year         = {2006}
+}
+
+@article{bartlett2002rademacher,
+  title        = {Rademacher and {Gaussian} Complexities: Risk Bounds and Structural Results},
+  author       = {Bartlett, Peter L. and Mendelson, Shahar},
+  journal      = {Journal of Machine Learning Research},
+  volume       = {3},
+  pages        = {463--482},
+  year         = {2002}
+}
+
+% ---- PAC-Bayes ------------------------------------------------------------
+@inproceedings{mcallester1999pacbayes,
+  title        = {{PAC}-{Bayesian} Model Averaging},
+  author       = {McAllester, David A.},
+  booktitle    = {Proceedings of the Twelfth Annual Conference on Computational Learning Theory (COLT)},
+  pages        = {164--170},
+  year         = {1999}
+}
+
+@inproceedings{dziugaite2017computing,
+  title        = {Computing Nonvacuous Generalization Bounds for Deep (Stochastic) Neural Networks with Many More Parameters than Training Data},
+  author       = {Dziugaite, Gintare Karolina and Roy, Daniel M.},
+  booktitle    = {Proceedings of the Thirty-Third Conference on Uncertainty in Artificial Intelligence (UAI)},
+  year         = {2017}
+}
+
+% Two foundational inference-time scaling references. Brown et al. 'Large Language Monkeys' (0) establishes repeated sampling as a test-time compute axis with log-linear coverage scaling laws — directly supports the N-channel and the test-time-compute allocation motivation (Part B, Sec. Why this is the right paper). Schaeffer et al. 'How Do Large Language Monkeys Get Their Power (Laws)?' (3) shows aggregate polynomial scaling emerges from a heavy-tailed distribution of per-problem success probabilities, closely paralleling this paper's mechanism where the mass of near-tie (small-margin) problems governs the irreducible N^{-beta/2} floor; cite when introducing the margin condition and the N-floor to connect the margin exponent beta to observed inference scaling laws.
+@article{brown2024largelm,
+ author = {Bradley Brown and Jordan Juravsky and Ryan Ehrlich and Ronald Clark and Quoc V. Le and Christopher R'e and Azalia Mirhoseini},
+ booktitle = {arXiv.org},
+ journal = {ArXiv},
+ title = {Large Language Monkeys: Scaling Inference Compute with Repeated Sampling},
+ volume = {abs/2407.21787},
+ year = {2024}
+}
+
+@article{schaeffer2025howdl,
+ author = {Rylan Schaeffer and Joshua Kazdan and John Hughes and Jordan Juravsky and Sara Price and Aengus Lynch and Erik Jones and Robert Kirk and Azalia Mirhoseini and Oluwasanmi Koyejo},
+ booktitle = {International Conference on Machine Learning},
+ journal = {ArXiv},
+ title = {How Do Large Language Monkeys Get Their Power (Laws)?},
+ volume = {abs/2502.17578},
+ year = {2025}
+}
+
+% Two foundational test-time compute scaling references supporting the paper's central actionable deliverable (allocating a fixed generation budget between more problems Q and more generations N). Snell et al. (ICLR 2025) study compute-optimal test-time scaling, showing effective allocation of inference compute per prompt depending on difficulty—directly motivating the N-vs-Q budget-allocation corollary (Part B, Sec. 'Why this is the right paper'). Wu et al. (ICLR 2024) 'Inference Scaling Laws' empirically analyze compute-optimal inference across strategies including majority voting, best-of-n, and weighted voting on MATH, directly connecting to the weighted-aggregation framing and the trade-off between generations and problems; cite when introducing the test-time-compute allocation motivation and comparing aggregation strategies.
+@article{snell2025scalinglt,
+ author = {C. Snell and Jaehoon Lee and Kelvin Xu and Aviral Kumar},
+ booktitle = {International Conference on Learning Representations},
+ title = {Scaling LLM Test-Time Compute Optimally Can be More Effective than Scaling Parameters for Reasoning},
+ year = {2025}
+}
+
+@article{wu2024inferencesl,
+ author = {Yangzhen Wu and Zhiqing Sun and Shanda Li and S. Welleck and Yiming Yang},
+ booktitle = {International Conference on Learning Representations},
+ title = {Inference Scaling Laws: An Empirical Analysis of Compute-Optimal Inference for LLM Problem-Solving},
+ year = {2024}
+}
+
+% Rein et al. (2023) introduce GPQA, the Graduate-Level Google-Proof Q&A benchmark (GPQA-Diamond subset) used in the paper's empirical tables comparing VC generalization bounds to observed vanilla ensemble accuracy gaps. Cite as the dataset source when presenting the benchmark results (Part A, Sec. 'The honest generalization bound') and when estimating the margin exponent per benchmark (Part B experiments).
+@article{rein2023gpqaag,
+ author = {David Rein and Betty Li Hou and Asa Cooper Stickland and Jackson Petty and Richard Yuanzhe Pang and Julien Dirani and Julian Michael and Samuel R. Bowman},
+ booktitle = {arXiv.org},
+ journal = {ArXiv},
+ title = {GPQA: A Graduate-Level Google-Proof Q\&A Benchmark},
+ volume = {abs/2311.12022},
+ year = {2023}
+}
+
+% Hendrycks et al. (2021) introduce the MATH dataset of competition mathematics problems; the MATH500 subset used in the paper's empirical generalization-gap tables (Part A, Sec. 'The honest generalization bound') and per-benchmark margin-exponent estimation (Part B experiments) is drawn from it. Cite as dataset provenance alongside the GPQA benchmark.
+@article{hendrycks2021measuringmp,
+ author = {Dan Hendrycks and Collin Burns and Saurav Kadavath and Akul Arora and Steven Basart and Eric Tang and D. Song and J. Steinhardt},
+ booktitle = {NeurIPS Datasets and Benchmarks},
+ journal = {ArXiv},
+ title = {Measuring Mathematical Problem Solving With the MATH Dataset},
+ volume = {abs/2103.03874},
+ year = {2021}
+}
+
+% Wang et al. (2022) introduce self-consistency, the canonical LLM-output aggregation method: sample a diverse set of reasoning paths (multiple generations, the N axis) and aggregate by marginalizing to the most consistent (majority-vote) answer. Foundational to the paper's framing of estimating each LLM's empirical answer distribution p_hat_i(.|q) from N generations and to the majority/weighted-vote aggregation view (Weighted Majority collapse of each expert to its top answer). Cite when introducing empirical answer estimation from N generations (Notation / N-channel) and when situating the aggregation framing among LLM inference-time methods.
+@article{wang2022selfconsistencyic,
+ author = {Xuezhi Wang and Jason Wei and Dale Schuurmans and Quoc Le and Ed H. Chi and Denny Zhou},
+ booktitle = {International Conference on Learning Representations},
+ journal = {ArXiv},
+ title = {Self-Consistency Improves Chain of Thought Reasoning in Language Models},
+ volume = {abs/2203.11171},
+ year = {2022}
+}
+
+% Wang et al. (2024) 'Mixture-of-Agents Enhances Large Language Model Capabilities' proposes a layered architecture that combines the outputs of multiple distinct LLM agents to leverage their collective strengths. This grounds the paper's core setting of aggregating K fixed LLMs and motivates the multi-LLM ensembling / convex-combination framing. Cite when introducing the multi-LLM ensemble setup (Notation / framing in Part A) and when situating the aggregation-of-fixed-classifiers view among modern LLM ensembling methods.
+@article{wang2024mixtureofagentsel,
+ author = {Junlin Wang and Jue Wang and Ben Athiwaratkun and Ce Zhang and James Zou},
+ booktitle = {International Conference on Learning Representations},
+ journal = {ArXiv},
+ title = {Mixture-of-Agents Enhances Large Language Model Capabilities},
+ volume = {abs/2406.04692},
+ year = {2024}
+}
+
+% Two references grounding the paper's caveat that PAC-Bayes bounds the Gibbs (average) risk of a randomly drawn hypothesis, whereas the deployed ensemble is a single deterministic weighted majority vote (Part A, Sec. 'What PAC-Bayes buys', caveat 1 on Gibbs vs. deterministic). Viallard et al. (2021, ECML/PKDD) formalize the C-bound relating the deterministic majority-vote 0/1 risk to the first two moments of the margin (expected margin and voters' diversity), directly matching the note's 'variance/Cantelli (C-bound) argument.' Wu et al. (2021, NeurIPS) introduce a Chebyshev-Cantelli PAC-Bayes-Bennett inequality for the weighted majority vote, precisely the Cantelli mechanism referenced and specialized to the weighted-vote setting used here. Cite both when discussing how to recover a bound on the deterministic shipped ensemble from the Gibbs certificate.
+@article{viallard2021selfboundingmv,
+ author = {Paul Viallard and Pascal Germain and Amaury Habrard and Emilie Morvant},
+ booktitle = {ECML/PKDD},
+ journal = {ArXiv},
+ title = {Self-Bounding Majority Vote Learning Algorithms by the Direct Minimization of a Tight PAC-Bayesian C-Bound},
+ volume = {abs/2104.13626},
+ year = {2021}
+}
+
+@article{wu2021chebyshevcantellipi,
+ author = {Yi-Shan Wu and A. Masegosa and S. Lorenzen and C. Igel and Yevgeny Seldin},
+ booktitle = {Neural Information Processing Systems},
+ pages = {12625-12636},
+ title = {Chebyshev-Cantelli PAC-Bayes-Bennett Inequality for the Weighted Majority Vote},
+ year = {2021}
+}
+
+% Smith & Winkler (2006), 'The Optimizer's Curse: Skepticism and Postdecision Surprise in Decision Analysis' (Management Science), is the foundational reference for the optimizer's/winner's curse: when an option is selected by maximizing over noisy value estimates, the selected option's true value is systematically overestimated (postdecision surprise). This directly grounds the paper's Channel 2 phenomenon in Part B, Sec. 'The two channels are genuinely distinct'—the optimization bias observed even with no problem-level overfitting (fixed Q, no held-out set), arising purely from fitting weights against N-noisy empirical accuracy and decaying like 1/sqrt(N). Cite when introducing Channel 2 (winner's curse from N) and when discussing the coupling term (i) that must be controlled in the N-floor bound (Sec. 'What must be nailed down').
+@article{smith2006theoc,
+ author = {James E. Smith and R. L. Winkler},
+ booktitle = {Management Sciences},
+ journal = {Manag. Sci.},
+ pages = {311-322},
+ title = {The Optimizer's Curse: Skepticism and Postdecision Surprise in Decision Analysis},
+ volume = {52},
+ year = {2006}
+}
+
+% Jiang et al. (2023, ACL) introduce LLM-Blender, a framework for ensembling multiple fixed open-source LLMs via a PairRanker (pairwise comparison) and GenFuser (generative fusion), motivated by the observation that the best LLM varies per example. This is a canonical multi-LLM ensembling reference that grounds the paper's core setting of aggregating K fixed LLMs under a combination rule. Cite it when introducing the multi-LLM ensemble setup and situating the aggregation-of-fixed-classifiers / convex-combination weighting framing among modern LLM ensembling methods (Part A, Notation / framing), alongside Mixture-of-Agents and self-consistency.
+@article{jiang2023llmblenderel,
+ author = {Dongfu Jiang and Xiang Ren and Bill Yuchen Lin},
+ booktitle = {Annual Meeting of the Association for Computational Linguistics},
+ pages = {14165-14178},
+ title = {LLM-Blender: Ensembling Large Language Models with Pairwise Ranking and Generative Fusion},
+ year = {2023}
+}
+
+% Schapire, Freund, Bartlett & Lee (1998), 'Boosting the Margin: A New Explanation for the Effectiveness of Voting Methods' is the foundational margin-theory explanation of generalization for convex combinations of classifiers (voting/ensemble methods), bounding generalization error in terms of the margin distribution rather than the number of voters. This directly grounds the paper's margin-centric framing of ensemble correctness (M_q(w) > 0), the margin exponent beta, and the use of margin histograms to characterize which benchmarks are 'learnable' (Part A framing and Part B margin condition). Koltchinskii, Panchenko & Lozano (2001, COLT/EuroCOLT), 'Further Explanation of the Effectiveness of Voting Methods: The Game between Margins and Weights' refines these margin-based generalization bounds using data-dependent (Rademacher-type) complexity for weighted voting classifiers, complementing the local-Rademacher references already cited and directly supporting the VC/Rademacher generalization arguments over the convex-combination hypothesis class. Cite both when introducing the margin-based hypothesis class and generalization bounds (Part A, Sec. 'The honest generalization bound') and when motivating the Tsybakov margin condition on the problem distribution (Part B).
+@article{schapire1997boostingtm,
+ author = {R. Schapire and Y. Freund and Peter Barlett and Wee Sun Lee},
+ booktitle = {International Conference on Machine Learning},
+ pages = {322-330},
+ title = {Boosting the margin: A new explanation for the effectiveness of voting methods},
+ year = {1997}
+}
+
+@article{koltchinskii2001furthereo,
+ author = {V. Koltchinskii and D. Panchenko and Fernando Lozano},
+ booktitle = {COLT/EuroCOLT},
+ pages = {241-255},
+ title = {Further Explanation of the Effectiveness of Voting Methods: The Game between Margins and Weights},
+ year = {2001}
+}
+
+% Audibert & Tsybakov, 'Fast learning rates for plug-in classifiers under the margin condition' — the canonical reference establishing fast (and super-fast) excess-risk rates under the Tsybakov margin/low-noise condition together with matching minimax lower bounds. Supports the accelerated Q-channel rate (Prop. qrate, interpolation from sqrt(KA/Q) to KA/Q), grounds the margin-exponent beta machinery in Part B, and provides the two-point/minimax lower-bound methodology needed to establish the N-floor as irreducible (Sec. 'What must be nailed down'). Cite alongside mammen1999smooth, tsybakov2004optimal, and massart2006risk when transporting the margin condition to the LLM-ensemble classifier-aggregation setting.
+@article{audibert2005fastlr,
+ author = {Jean-Yves Audibert and A. Tsybakov},
+ journal = {Annals of Statistics},
+ pages = {608-633},
+ title = {Fast learning rates for plug-in classifiers},
+ volume = {35},
+ year = {2005}
+}
+
+% Bartlett, Jordan & McAuliffe, 'Convexity, Classification, and Risk Bounds' (JASA 2006, result 0) is the canonical reference on classification calibration and excess-risk bounds relating convex/margin surrogate losses to the 0/1 risk; it grounds the paper's transport of margin/Tsybakov machinery to the ensemble 0/1 margin loss M_q(w)>0 (Part A generalization bound). Their companion NeurIPS 2003 paper 'Large Margin Classifiers: Convex Loss, Low Noise, and Convergence Rates' (result 1) explicitly links surrogate-loss convergence rates to low-noise (Tsybakov) conditions, directly supporting the accelerated Q-channel rate under the margin exponent beta (Prop. qrate) and the low-noise analysis in Part B. Cite both when introducing the margin-based hypothesis class and the risk decomposition, alongside mammen1999smooth, tsybakov2004optimal, massart2006risk, and audibert2005fastlr.
+@article{bartlett2006convexityca,
+ author = {P. Bartlett and Michael I. Jordan and Jon D. McAuliffe},
+ journal = {Journal of the American Statistical Association},
+ pages = {138 - 156},
+ title = {Convexity, Classification, and Risk Bounds},
+ volume = {101},
+ year = {2006}
+}
+
+@article{bartlett2003largemc,
+ author = {P. Bartlett and Michael I. Jordan and Jon D. McAuliffe},
+ booktitle = {Neural Information Processing Systems},
+ pages = {1173-1180},
+ title = {Large Margin Classifiers: Convex Loss, Low Noise, and Convergence Rates},
+ year = {2003}
+}
+
+% Freund & Schapire (1997), 'A Decision-Theoretic Generalization of On-Line Learning and an Application to Boosting' — the canonical AdaBoost reference. Grounds the paper's explicit contrast in Part A (Sec. 'What the problem actually is') that the fixed/frozen-classifier aggregation setting is NOT boosting: boosting adaptively constructs its weak learners, whereas here the K LLMs are fixed and given (late-fusion/frozen-expert regime). Cite when distinguishing convex-combination aggregation of fixed soft classifiers from boosting, alongside the stacking (Wolpert, Breiman) and weighted-majority (Littlestone & Warmuth) framing references.
+@article{freund1997adg,
+ author = {Y. Freund and R. Schapire},
+ booktitle = {European Conference on Computational Learning Theory},
+ pages = {23-37},
+ title = {A decision-theoretic generalization of on-line learning and an application to boosting},
+ year = {1997}
+}
+
+% Breiman's original 'Bagging Predictors' (1996) introduces bootstrap aggregating, where multiple versions of a single base learner are trained on bootstrap-resampled training data and averaged. Needed to ground the Part A framing contrast (Sec. 'What the problem actually is'), where the paper explicitly distinguishes the fixed/frozen-expert convex-combination aggregation regime from bagging (which perturbs the training data of a single base learner rather than combining given, distinct predictors). Cite alongside boosting (Freund & Schapire, freund1997adg) and stacking (Wolpert wolpert1992stacked, Breiman breiman1996stacked) when situating aggregation of fixed soft classifiers relative to classical ensemble methods.
+@article{breiman1996baggingp,
+ author = {L. Breiman},
+ booktitle = {Machine-mediated learning},
+ journal = {Machine Learning},
+ pages = {123-140},
+ title = {Bagging Predictors},
+ volume = {24},
+ year = {1996}
+}
+
+% Cobbe et al. (2021), 'Training Verifiers to Solve Math Word Problems', introduces GSM8K and the paradigm of training verifiers to rank multiple candidate LLM completions: at test time, generate many candidate solutions (the N-generation axis) and select the one ranked highest by the verifier, with verification scaling more effectively with data. This grounds the paper's core mechanism of estimating each LLM's answer distribution from N generations and the weighted-selection/aggregation-over-candidates framing (Notation / N-channel in Part B). Cite when motivating the N axis (repeated generation) and situating verifier-based best-of-n selection among test-time aggregation strategies, alongside self-consistency (wang2022selfconsistencyic), best-of-n scaling (brown2024largelm), and inference scaling laws (wu2024inferencesl, snell2025scalinglt).
+@article{cobbe2021trainingvt,
+ author = {K. Cobbe and Vineet Kosaraju and Mo Bavarian and Mark Chen and Heewoo Jun and Lukasz Kaiser and Matthias Plappert and Jerry Tworek and Jacob Hilton and Reiichiro Nakano and Christopher Hesse and John Schulman},
+ booktitle = {arXiv.org},
+ journal = {ArXiv},
+ title = {Training Verifiers to Solve Math Word Problems},
+ volume = {abs/2110.14168},
+ year = {2021}
+}
+
+% Two additions supporting Part B's N-channel and test-time-compute allocation story. (0) Gao, Schulman & Hilton, 'Scaling Laws for Reward Model Overoptimization' (ICML 2022) is the canonical LLM-native instance of over-optimization under noisy proxy selection (Goodhart's law), explicitly analyzing best-of-n sampling and how optimizing against an imperfect proxy degrades true performance—directly grounding the Channel-2 winner's/optimizer's-curse mechanism (Part B, Sec. 'The two channels are genuinely distinct' and the coupling term (i) in Sec. 'What must be nailed down'), complementing the classical decision-analysis reference smith2006theoc. (6) Chen, Pan, Li, Ding & Zhou, 'Provable Scaling Laws for the Test-Time Compute of Large Language Models' provides theoretical test-time scaling for aggregating multiple candidate generations via knockout/league-style voting, proving failure probability decays exponentially or by a power law as test-time compute (the N axis) grows—a direct theoretical peer to the paper's irreducible N^{-beta/2} floor and the N-vs-Q budget-allocation corollary. Cite (6) when motivating the test-time-compute allocation deliverable (Part B, Sec. 'Why this is the right paper') and situating the N-floor among provable inference-scaling results, alongside brown2024largelm, schaeffer2025howdl, snell2025scalinglt, and wu2024inferencesl.
+@article{gao2022scalinglf,
+ author = {Leo Gao and John Schulman and Jacob Hilton},
+ booktitle = {International Conference on Machine Learning},
+ pages = {10835-10866},
+ title = {Scaling Laws for Reward Model Overoptimization},
+ year = {2022}
+}
+
+@inproceedings{chen2024provablesl,
+ author = {Yanxi Chen and Xuchen Pan and Yaliang Li and Bolin Ding and Jingren Zhou},
+ title = {Provable Scaling Laws for the Test-Time Compute of Large Language Models},
+ year = {2024}
+}
+
+% Three references supporting the paper's 'Connection to adaptive stopping' discussion (Part B, Sec. 'Why this is the right paper'), where Komiyama's adaptive-stopping component is reinterpreted as N-floor reduction—dynamically allocating generations N per problem to push near-tie problems out of the |M_q| <= 1/sqrt(N) danger band. (7) Aggarwal et al., 'Let's Sample Step by Step: Adaptive-Consistency' (EMNLP 2023) is the canonical adaptive/early-stopping self-consistency method: it non-uniformly distributes the sample budget across problems based on inter-sample agreement via a lightweight stopping criterion, reducing samples up to 7.9x with negligible accuracy loss—a direct empirical instantiation of allocating N adaptively to reduce the N-channel cost; cite when discussing adaptive stopping and the N-vs-Q budget allocation. (8) Ota, Iwase, Ichihara, Komiyama & Imaizumi, 'CITE: Anytime-Valid Statistical Inference in LLM Self-Consistency' (2026)—by the source-paper author—provides anytime-valid certification of the target answer as the response-distribution mode under arbitrary data-driven stopping, proves a category-set-size-free stopping-time rate with matching minimax lower bounds, and extends to confidence-weighted voting; cite both in the adaptive-stopping section and in 'What must be nailed down' (the minimax lower-bound requirement establishing the N-floor as irreducible). (1) Aghazadeh et al., 'CGES: Confidence-Guided Early Stopping for Efficient and Accurate Self-Consistency' (2025) is a Bayesian early-stopping framework forming posteriors over candidate answers and halting once one accumulates enough posterior mass, with guarantees in calibrated and noisy-confidence regimes—cite as a further instance of principled N-adaptive stopping that reduces generation cost while matching majority-vote accuracy.
+@article{aggarwal2023letsss,
+ author = {Pranjal Aggarwal and Aman Madaan and Yiming Yang and Mausam},
+ booktitle = {Conference on Empirical Methods in Natural Language Processing},
+ pages = {12375-12396},
+ title = {Let's Sample Step by Step: Adaptive-Consistency for Efficient Reasoning and Coding with LLMs},
+ year = {2023}
+}
+
+@inproceedings{ota2026citeas,
+ author = {Hirofumi Ota and Naoto Iwase and Yuki Ichihara and Junpei Komiyama and Masaaki Imaizumi},
+ title = {CITE: Anytime-Valid Statistical Inference in LLM Self-Consistency},
+ year = {2026}
+}
+
+@article{aghazadeh2025cgesce,
+ author = {Ehsan Aghazadeh and Ahmad Ghasemi and Hedyeh Beyhaghi and Hossein Pishro-Nik},
+ booktitle = {arXiv.org},
+ journal = {ArXiv},
+ title = {CGES: Confidence-Guided Early Stopping for Efficient and Accurate Self-Consistency},
+ volume = {abs/2511.02603},
+ year = {2025}
+}
+
+% Chen, Zaharia & Zou (2023, TMLR), 'FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance', is the canonical reference on cost-efficient LLM inference: it learns which combination of LLMs to query per problem (LLM cascade, prompt adaptation, LLM approximation) to match or exceed the best single model at a fraction of the cost. This grounds the practical payoff of the paper's test-time-compute allocation corollary (Part B, Sec. 'Why this is the right paper', point 2), where a fixed generation budget B ~ N*Q*K must be split between more problems (Q) and more generations per problem (N), and by extension which/how many fixed LLMs to query. Cite when motivating the budget-allocation deliverable and situating the N-vs-Q optimal split among cost-aware LLM deployment strategies, alongside snell2025scalinglt, wu2024inferencesl, and chen2024provablesl.
+@article{chen2023frugalgptht,
+ author = {Lingjiao Chen and M. Zaharia and James Y. Zou},
+ booktitle = {Trans. Mach. Learn. Res.},
+ journal = {ArXiv},
+ title = {FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance},
+ volume = {abs/2305.05176},
+ year = {2023}
+}
+@inproceedings{cam1986asymptoticmi,
+ author = {L. Cam},
+ title = {Asymptotic Methods In Statistical Decision Theory},
+ year = {1986}
+}
+
+@article{castro2007minimaxbf,
+ author = {R. Castro and R. Nowak},
+ booktitle = {IEEE Transactions on Information Theory},
+ journal = {IEEE Transactions on Information Theory},
+ pages = {2339-2353},
+ title = {Minimax Bounds for Active Learning},
+ volume = {54},
+ year = {2007}
+}
+
+@article{hanneke2009adaptivero,
+ author = {Steve Hanneke},
+ booktitle = {Annual Conference Computational Learning Theory},
+ title = {Adaptive Rates of Convergence in Active Learning},
+ year = {2009}
+}
+
+@article{jamieson2013lilu,
+ author = {Kevin G. Jamieson and Matthew Malloy and R. Nowak and Sébastien Bubeck},
+ booktitle = {Annual Conference Computational Learning Theory},
+ pages = {423-439},
+ title = {lil' UCB : An Optimal Exploration Algorithm for Multi-Armed Bandits},
+ year = {2013}
+}
+
+@article{karnin2013almostoe,
+ author = {Zohar S. Karnin and Tomer Koren and O. Somekh},
+ booktitle = {International Conference on Machine Learning},
+ pages = {1238-1246},
+ title = {Almost Optimal Exploration in Multi-Armed Bandits},
+ year = {2013}
+}
+
+@article{kaufmann2014ontc,
+ author = {E. Kaufmann and O. Cappé and Aurélien Garivier},
+ booktitle = {Journal of machine learning research},
+ journal = {ArXiv},
+ title = {On the Complexity of Best-Arm Identification in Multi-Armed Bandit Models},
+ volume = {abs/1407.4443},
+ year = {2014}
+}
+
+@inproceedings{lattimore2020bandita,
+ author = {Tor Lattimore and Csaba Szepesvari},
+ title = {Bandit Algorithms},
+ year = {2020}
+}
+
+@article{locatelli2016anoa,
+ author = {A. Locatelli and M. Gutzeit and A. Carpentier},
+ booktitle = {International Conference on Machine Learning},
+ pages = {1690-1698},
+ title = {An optimal algorithm for the Thresholding Bandit Problem},
+ year = {2016}
+}
+

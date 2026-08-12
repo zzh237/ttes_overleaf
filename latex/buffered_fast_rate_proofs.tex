@@ -1,0 +1,182 @@
+\section{Detailed Proof of the Optional Fast Rate}
+\label{app:fast-rate-proofs}
+
+This appendix supplies the empirical-process details suppressed in
+Section~\ref{sec:theory-fast}.  The argument is conditional on the stronger
+absolute-margin and risk-growth assumptions; it is not needed for the default
+bound in Theorem~\ref{thm:buffered-main}.
+
+\subsection{Localized finite-growth lemma}
+
+We prove Lemma~\ref{lem:localized-vc}.  Write \(P\) for expectation over a fresh
+question, \(P_Q\) for the empirical mean over the \(Q\) training questions, and
+\[
+g_w(q)=\ell_q(w)-\ell_q(w^\star),
+\qquad
+r(w)=Pg_w=R(w)-R(w^\star).
+\]
+Because the losses are binary, \(g_w\in\{-1,0,1\}\) and
+\[
+Pg_w^2
+=
+\mathbb P\{\ell_q(w)\ne\ell_q(w^\star)\}
+\le
+B r(w)^\alpha.
+\tag{A}
+\label{eq:app-bernstein-second-moment}
+\]
+
+We use the standard relative VC deviation inequality for bounded excess losses
+under a Bernstein condition \citep{massart2006risk,bartlett2005local,
+koltchinskii2006local}.  For completeness, its specialization here is as
+follows.  Peel the class into deterministic shells
+\(\mathcal G_j=\{g_w:2^j\rho<r(w)\le2^{j+1}\rho\}\).  Ghost-sample
+symmetrization reduces each shell to at most
+\(\Pi_{\mathcal L}(2Q)\) restriction vectors.  Bernstein's inequality, (A), and
+a union bound over those vectors and shells give, with probability at least
+\(1-\delta\), simultaneously for all \(w\) with \(r(w)>\rho\),
+\[
+(P-P_Q)g_w
+\le
+c\left[
+\sqrt{\frac{B r(w)^\alpha H_Q}{Q}}
++
+\frac{H_Q}{Q}
+\right],
+\tag{B}
+\label{eq:app-relative-vc}
+\]
+where \(H_Q=V_{2Q}+\log(1/\delta)+O(\log\log Q)\).
+The ensemble arrangement bound holds at every sample size and satisfies
+\(V_{2Q}\le c_0V_Q\).  Moreover,
+\(V_Q\asymp(K-1)\log(eAQ)\) absorbs the shell-union
+\(O(\log\log Q)\) term when \(K\ge2\).  The case \(K=1\) is trivial because the
+simplex contains only one weight.  Thus \(H_Q\le
+c_1\{V_Q+\log(1/\delta)\}\).  This is the usual finite-growth version of the
+localized VC argument; the use of the \(2Q\)-sample growth function is what
+makes (B) uniform over a data-dependent output.
+
+Set \(h=\{V_Q+\log(1/\delta)\}/Q\) and
+\(\rho=h^{1/(2-\alpha)}+h\).  If
+\(r(\widetilde w)\le\rho\), the claimed result is immediate.  Otherwise, the
+approximate-ERM premise gives \(P_Qg_{\widetilde w}\le a\), and (B) gives
+\[
+r(\widetilde w)
+\le
+a+c_2\sqrt B\,r(\widetilde w)^{\alpha/2}h^{1/2}+c_2h.
+\]
+Young's inequality with conjugate exponents \(2/\alpha\) and
+\(2/(2-\alpha)\) yields
+\[
+c_2\sqrt B\,r^{\alpha/2}h^{1/2}
+\le
+\frac12r+c_3h^{1/(2-\alpha)},
+\]
+where \(c_3\) depends only on \(B\) and \(\alpha\).  Rearranging proves
+\[
+R(\widetilde w)-R(w^\star)
+\le
+C\left[
+a+
+\left(\frac{V_Q+\log(1/\delta)}{Q}\right)^{1/(2-\alpha)}
++
+\frac{V_Q+\log(1/\delta)}{Q}
+\right].
+\]
+
+\subsection{Buffered ERM is an approximate clean ERM}
+
+We now complete Theorem~\ref{thm:fast}.  Let
+\(\varepsilon_N=\sqrt{2\log(8KAQ/\delta)/N}\), and define the event
+\[
+\mathcal E_{\rm mar}
+=
+\left\{
+\sup_{j\le Q}\sup_{w\in\Delta_K}
+|\widehat M_{q_j}(w)-M_{q_j}(w)|
+\le\varepsilon_N
+\right\}.
+\]
+Lemma~\ref{lem:margin-accuracy} gives this event with the required conditional
+high probability over generations.  On \(\mathcal E_{\rm mar}\), the indicator
+sandwich and optimality of buffered ERM imply
+\[
+\begin{aligned}
+P_Q\ell_{\widehat w_\varepsilon}
+&\le
+\widehat R_{\varepsilon_N}(\widehat w_\varepsilon)\\
+&\le
+\widehat R_{\varepsilon_N}(w^\star)\\
+&\le
+P_Q\mathbf 1\{M_q(w^\star)\le2\varepsilon_N\}\\
+&=
+P_Q\ell_{w^\star}
++
+P_Q\mathbf 1\{0<M_q(w^\star)\le2\varepsilon_N\}.
+\end{aligned}
+\tag{C}
+\label{eq:app-approx-erm-chain}
+\]
+This comparison uses distributional boundary control only at the fixed
+comparator \(w^\star\), not at the random fitted weight.
+
+Let \(B_N(q)=\mathbf 1\{0<M_q(w^\star)\le2\varepsilon_N\}\) and
+\(b_N=PB_N\).  The absolute-margin condition and
+\(2\varepsilon_N\le t_0\) give
+\(b_N\le C_m(2\varepsilon_N)^\beta\).
+Bernstein's inequality for the \(Q\) i.i.d.\ Bernoulli variables \(B_N(q_j)\)
+gives, with probability at least \(1-\delta/4\),
+\[
+P_QB_N
+\le
+b_N+\sqrt{\frac{2b_N\log(4/\delta)}{Q}}
++
+\frac{2\log(4/\delta)}{3Q}
+\le
+2b_N+\frac{2\log(4/\delta)}{Q}.
+\tag{E}
+\label{eq:app-band-concentration}
+\]
+The second inequality uses \(\sqrt{uv}\le(u+v)/2\).
+
+On the intersection of the margin and band events, (C), the bound on \(b_N\),
+and (E) show that
+\(\widehat w_\varepsilon\) satisfies Lemma~\ref{lem:localized-vc} with the
+deterministic slack
+\[
+a_N
+=
+2C_m(2\varepsilon_N)^\beta
++
+\frac{2\log(4/\delta)}{Q}.
+\]
+Proposition~\ref{prop:geom-bernstein} supplies the lemma's Bernstein premise
+with \(\alpha=\min\{1,\beta/\gamma\}\), and the hyperplane arrangement gives
+\(V_Q\lesssim(K-1)\log(eAQ)\).  Applying the localized lemma at confidence
+\(\delta/2\), and union-bounding its question-sample event with the margin and
+band events, gives probability at least \(1-\delta\) and
+\[
+\begin{aligned}
+R(\widehat w_\varepsilon)-R(w^\star)
+\le C\Bigg[
+&\left(
+\frac{(K-1)\log(eAQ)+\log(1/\delta)}{Q}
+\right)^{1/(2-\alpha)}\\
+&+
+\frac{(K-1)\log(eAQ)+\log(1/\delta)}{Q}
++
+(2\varepsilon_N)^\beta
+\Bigg].
+\end{aligned}
+\]
+For normalized question complexity at most one, the linear term is no larger
+than the localized power; when it exceeds one, the risk bound is trivial after
+enlarging the constant.  Finally,
+\[
+(2\varepsilon_N)^\beta
+\lesssim
+\left(\frac{\log(KAQ/\delta)}{N}\right)^{\beta/2}.
+\]
+This proves Eq.~(\ref{eq:fast-rate}).  The conditional generation guarantee for
+\(\mathcal E_{\rm mar}\) combines with the two question-sample events by the
+tower property; no independence among the three events is required.

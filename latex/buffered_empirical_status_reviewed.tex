@@ -1,0 +1,84 @@
+\section{Empirical Status and Direct Validation}
+\label{sec:experiments}
+
+The current evidence has two roles: it shows that finite-generation
+instability is visible in the existing pipeline, and it identifies the
+experiment still needed to test the calibrated buffer.  We keep those roles
+separate.  In particular, none of the results below is presented as a completed
+evaluation of Theorem~\ref{thm:buffered-main}.
+
+\subsection{What the tracked artifacts establish}
+\label{sec:experiments-existing}
+
+The repository contains tracked generation files for AIME 2024, AIME 2025,
+GPQA-Diamond, and MATH-500 \citep{rein2023gpqaag,hendrycks2021measuringmp}.
+The reproducible analysis in
+\texttt{zhi\_code/src/pacbayes\_boinf.py} compares the original weight-fitting
+MILP with a bootstrap-stability plus max-margin variant.  Averaged over the four
+benchmarks, the absolute train--test gap changes from \(0.0831\) to \(0.0717\),
+or \(13.67\%\) relative closure.  Across five stored cross-benchmark
+directions, the mean closure is \(26.00\%\), although the individual directions
+are heterogeneous and one is negative.  The per-benchmark values, figures, and
+artifact paths are reported in Appendix~\ref{app:legacy-real}; every stored
+in-domain, transfer, model-count, and PAC--Bayes value is transcribed in
+Appendix~\ref{app:legacy-full-data}.
+
+These diagnostics establish that the code path is executable and that
+regularizing a weight fit can change finite-sample generalization.  They do not
+isolate the theorem's mechanism: the implemented variant combines bootstrap
+stability with a numerical margin, whereas buffered ERM uses the explicit
+uncertainty radius \(\varepsilon_N(\delta)\).  The retained PAC--Bayes values
+are likewise diagnostics, not certificates for the deterministic buffered
+predictor.
+
+The earlier draft also reported a small synthetic mechanism check.  Its four
+rows show the mass of the \(N^{-1/2}\) boundary band decreasing with \(N\),
+while sign flips concentrate inside that band; a second column tracks the
+selection bias from optimizing noisy empirical accuracy.  Because the original
+per-replicate files are unavailable, Appendix~\ref{app:legacy-synthetic}
+labels these values as legacy reports rather than a fresh rerun.
+
+\subsection{The direct buffered-ERM experiment}
+\label{sec:experiments-required}
+
+A direct test should hold the model set and answer extractor fixed, repeatedly
+split benchmark questions into training and test sets, and independently
+subsample both axes: \(Q\) labeled training questions and \(N\) generations per
+model and question.  On every split, it should compare uniform voting, raw ERM
+with zero buffer, buffered ERM with
+\(\varepsilon_N(\delta)=\sqrt{2\log(8KAQ/\delta)/N}\), and the existing
+stability-plus-margin baseline.  The multiplicative constant in the buffer may
+be selected on a validation split, but the test split must not influence it.
+
+The primary outcomes are clean held-out error under high-generation
+frequencies, end-to-end finite-generation held-out error, excess error relative
+to a high-generation oracle fit, and the train--test gap.  Reporting the two
+held-out errors separately prevents prediction-time sampling noise from being
+mistaken for weight-estimation error.  Mechanism checks should also report the
+empirical mass of the positive comparator band
+\(0<M_q(w^\star)\le2\varepsilon_N\), margin-sign flips inside and outside that
+band, and sensitivity to \(Q\), \(N\), \(K\), and the confidence level.  Repeated
+splits or a paired bootstrap over questions should provide uncertainty
+intervals.  This design distinguishes the \(Q\)-generalization term from the
+\(N\)-resolution term instead of inferring both from one aggregate accuracy
+curve.
+
+\subsection{Implementation boundary}
+\label{sec:experiments-implementation}
+
+The existing solver in \texttt{src/tte/milp.py} already exposes the relevant
+constraint through \texttt{strict\_margin}.  Passing
+\(\varepsilon_N(\delta)\) implements Eq.~(\ref{eq:buffered-milp}); scripts that
+pass \(10^{-4}\) use only a numerical tie-breaking tolerance.  Promoting the
+planned experiment to a completed result therefore requires saved split
+indices, sampled-generation indices, fitted weights, per-split metrics, and
+the aggregate table or figure.  Until those artifacts exist, the theoretical
+guarantee and the legacy diagnostics remain intentionally distinct.
+
+The current matrix builder also forms each answer set from the union of answers
+observed in the same finite generations.  A theorem-aligned run must instead
+fix the answer normalization and candidate support before fitting, or define a
+residual category whose treatment preserves the strongest-contender rule.
+Otherwise an unobserved wrong answer can disappear from the empirical
+\(\arg\max\), and the fixed-\(A\) concentration argument does not directly
+describe the implemented decision rule.

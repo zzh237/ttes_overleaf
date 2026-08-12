@@ -1,0 +1,233 @@
+\section{Method}
+\label{sec:method}
+
+\subsection{Two samples behind one ensemble}
+\label{sec:method-setup}
+
+There are \(K\) frozen language models, indexed by \(i=1,\ldots,K\).
+Problems are drawn independently from an unknown distribution \(\mathcal D\);
+the labeled training benchmark is \(q_1,\ldots,q_Q\).  Each problem \(q\) has a
+finite candidate set \(\mathcal A(q)\), with
+\(|\mathcal A(q)|\le A\), and gold answer \(a^\star(q)\).
+Model \(i\) induces an answer distribution \(p_i(\cdot\mid q)\).  We do not
+observe that distribution.  Instead, we draw \(N\) independent generations
+\(Y_{i,1}(q),\ldots,Y_{i,N}(q)\) and form
+\begin{equation}
+\widehat p_i(a\mid q)
+=
+\frac1N\sum_{n=1}^N\mathbf 1\{Y_{i,n}(q)=a\}.
+\label{eq:phat}
+\end{equation}
+Thus \(\widehat p_i(a\mid q)\) is simply a normalized vote count.  The vectors
+\(p_i(\cdot\mid q)\) and \(\widehat p_i(\cdot\mid q)\) lie in the probability
+simplex over \(\mathcal A(q)\): they have one nonnegative coordinate per answer
+and their coordinates sum to one.  This construction exposes two independent
+sample sizes.  \(Q\) controls learning across problems; \(N\) controls how well
+each model's answer distribution is measured on a problem.
+
+An ensemble uses a convex weight vector
+\(w\in\Delta_K=\{w\in\mathbb R_+^K:\sum_iw_i=1\}\).  It assigns answer \(a\)
+the population and empirical scores
+\begin{equation}
+s_q(a;w)=\sum_{i=1}^K w_i p_i(a\mid q),
+\qquad
+\widehat s_q(a;w)=\sum_{i=1}^K w_i\widehat p_i(a\mid q).
+\label{eq:scores}
+\end{equation}
+The corresponding predictors return the highest-scoring answer.  Equal
+weights recover ordinary voting; nonuniform weights give a weighted plurality
+vote.  In the large-\(N\) limit, empirical voting converges to
+\(\arg\max_a s_q(a;w)\).
+
+\subsection{The hardest contender determines correctness}
+\label{sec:method-margin}
+
+For each wrong answer \(a\ne a^\star(q)\), define the \(K\)-vector
+\(\Delta_{q,a}=p_\cdot(a^\star(q)\mid q)-p_\cdot(a\mid q)\), and define
+\(\widehat\Delta_{q,a}\) analogously.  The inner product
+\(\langle w,\Delta_{q,a}\rangle\) is the ensemble score of the gold answer
+minus the score of \(a\).  It is positive when the gold answer beats that
+contender and negative when the contender wins.  Because a correct prediction
+must beat every wrong answer, the relevant margin is the smallest such gap:
+\begin{equation}
+M_q(w)=\min_{a\ne a^\star(q)}\langle w,\Delta_{q,a}\rangle,
+\qquad
+\widehat M_q(w)=
+\min_{a\ne a^\star(q)}
+\langle w,\widehat\Delta_{q,a}\rangle.
+\label{eq:margins}
+\end{equation}
+Taking the minimum is conservative, not favorable: it selects the hardest
+wrong answer.  Hence \(M_q(w)>0\) means that every gap is positive and the
+ensemble is correct; \(M_q(w)\le0\) means that some wrong answer ties or wins.
+We count ties as errors and write
+\begin{equation}
+\ell_q(w)=\mathbf 1\{M_q(w)\le0\},
+\qquad
+R(w)=\mathbb P_{q\sim\mathcal D}\{M_q(w)\le0\}.
+\label{eq:risk}
+\end{equation}
+
+For a concrete example, consider two models and two wrong answers with
+\(\Delta_{q,a_1}=(0.4,-0.1)\), \(\Delta_{q,a_2}=(0.1,0.3)\), and
+\(w=(0.5,0.5)\).  The two gaps are \(0.15\) and \(0.20\), so the margin is
+\(0.15>0\): the ensemble is correct, and \(a_1\) is the binding contender.
+
+The same definition has a useful geometric reading.  With one wrong answer,
+the correct weights form one halfspace of the \((K-1)\)-dimensional weight
+simplex.  With several wrong answers, correctness requires all corresponding
+halfspace inequalities.  Its closure is therefore a polytope, and the strict
+correct region is the relative interior selected by those inequalities.
+Across \(Q\) problems, at most \(Q(A-1)\) such hyperplanes partition the
+simplex.  This is why the statistical complexity depends primarily on the
+weight dimension \(K-1\), with only logarithmic dependence on the number of
+contenders in the finite-sample arrangement bound.  Figure~\ref{fig:weight-geometry}
+restores the geometric view developed in the reviewed draft.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[scale=1.9,every node/.style={font=\scriptsize}]
+  \begin{scope}
+    \coordinate (A) at (0,0);
+    \coordinate (B) at (2.4,0.3);
+    \coordinate (C) at (1.1,1.0);
+    \coordinate (D) at (0.9,2.2);
+    \draw[gray,dashed] (A)--(C) (B)--(C) (C)--(D);
+    \draw[thick] (A)--(B) (A)--(D) (B)--(D);
+    \coordinate (P1) at (0.405,0.99);
+    \coordinate (P2) at (1.725,1.155);
+    \coordinate (P3) at (1.01,1.54);
+    \fill[blue!14,opacity=0.8] (P1)--(P2)--(D)--cycle;
+    \fill[blue!14,opacity=0.8] (P1)--(P3)--(D)--cycle;
+    \fill[blue!14,opacity=0.8] (P2)--(P3)--(D)--cycle;
+    \draw[blue!70!black,thick] (P1)--(P2);
+    \draw[blue!70!black,thick,dashed] (P2)--(P3)--(P1);
+    \node[blue!55!black] at (0.95,1.78) {correct};
+    \node[below left] at (A) {$e_1$};
+    \node[below right] at (B) {$e_2$};
+    \node[right] at (C) {$e_3$};
+    \node[above] at (D) {$e_4$};
+    \node[align=center] at (1.1,-0.55)
+      {(a) One wrong answer: one plane\\[-1pt]cuts the simplex, and the correct\\[-1pt]weights form one halfspace.};
+  \end{scope}
+  \begin{scope}[xshift=4.3cm]
+    \coordinate (A) at (0,0);
+    \coordinate (B) at (2.4,0.3);
+    \coordinate (C) at (1.1,1.0);
+    \coordinate (D) at (0.9,2.2);
+    \draw[gray,dashed] (A)--(C) (B)--(C) (C)--(D);
+    \draw[thick] (A)--(B) (A)--(D) (B)--(D);
+    \coordinate (Q1) at (0.80,0.72);
+    \coordinate (Q2) at (1.42,0.86);
+    \coordinate (Q3) at (1.30,1.40);
+    \coordinate (Q4) at (0.70,1.18);
+    \fill[blue!16,opacity=0.85] (Q1)--(Q2)--(Q3)--(Q4)--cycle;
+    \draw[blue!70!black,thick] ($(Q1)!-0.9!(Q2)$)--($(Q2)!-0.9!(Q1)$);
+    \draw[blue!70!black,thick] ($(Q2)!-0.6!(Q3)$)--($(Q3)!-0.9!(Q2)$);
+    \draw[blue!70!black,thick] ($(Q3)!-0.9!(Q4)$)--($(Q4)!-0.9!(Q3)$);
+    \draw[blue!70!black,thick] ($(Q4)!-0.6!(Q1)$)--($(Q1)!-0.9!(Q4)$);
+    \node[blue!55!black] at (1.05,1.05) {$P$};
+    \node[below left] at (A) {$e_1$};
+    \node[below right] at (B) {$e_2$};
+    \node[right] at (C) {$e_3$};
+    \node[above] at (D) {$e_4$};
+    \node[align=center] at (1.1,-0.55)
+      {(b) Several wrong answers: each adds\\[-1pt]one plane, and their halfspaces\\[-1pt]intersect in the region $P$.};
+  \end{scope}
+\end{tikzpicture}
+\caption{Correct-weight geometry for one question with \(K=4\).  The weight
+simplex is a tetrahedron whose vertices are pure model choices.  Each contender
+creates a decision hyperplane.  With one contender, correctness selects one
+side of one plane; with several contenders, all inequalities must hold, giving
+the relative interior of a polytope.}
+\label{fig:weight-geometry}
+\end{figure}
+
+\subsection{Buffered empirical risk minimization}
+\label{sec:method-buffer}
+
+Raw empirical risk minimization can reward a weight vector for exploiting
+finite-\(N\) sign errors near zero.  We instead require the empirical gold
+score to clear a positive buffer.  For \(\varepsilon\ge0\), define
+\begin{equation}
+\widehat R_\varepsilon(w)
+=
+\frac1Q\sum_{j=1}^Q
+\mathbf 1\{\widehat M_{q_j}(w)\le\varepsilon\},
+\qquad
+\widehat w_\varepsilon\in
+\arg\min_{w\in\Delta_K}\widehat R_\varepsilon(w).
+\label{eq:buffered-erm}
+\end{equation}
+The theory chooses
+\(\varepsilon=\varepsilon_N(\delta)
+=\sqrt{2\log(8KAQ/\delta)/N}\), the uniform training-sample scale of the
+finite-generation error.  The constant is not essential; the statistical
+role is.  A problem is counted as empirically solved only when the observed
+gold score beats every observed contender by more than the uncertainty
+radius.
+
+\begin{algorithm}[t]
+\caption{Margin-buffered weighted voting}
+\label{alg:buffered}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} labeled problems \(q_{1:Q}\), models \(1{:}K\),
+generation count \(N\), confidence \(\delta\)
+\FOR{each training problem \(q_j\) and model \(i\)}
+  \STATE draw \(N\) answers and compute the frequencies in
+  Eq.~(\ref{eq:phat})
+\ENDFOR
+\STATE set
+\(\varepsilon_N\leftarrow\sqrt{2\log(8KAQ/\delta)/N}\)
+\STATE solve Eq.~(\ref{eq:buffered-erm}) for
+\(\widehat w_{\varepsilon_N}\)
+\STATE \textbf{return} the learned weights \(\widehat w_{\varepsilon_N}\)
+\STATE \textbf{Deploy:} estimate fresh frequencies
+\(\widehat p_i(\cdot\mid q)\)
+\STATE \textbf{predict}
+\(\widehat f_N(q)=\arg\max_a\sum_i\widehat w_{\varepsilon_N,i}
+\widehat p_i(a\mid q)\)
+\end{algorithmic}
+\end{algorithm}
+
+The main theorem isolates the effect of finite generations during weight
+fitting: it controls the clean population risk
+\(R(\widehat w_{\varepsilon_N})\), whose predictor uses the population scores
+\(s_q(a;\widehat w_{\varepsilon_N})\).  The practical
+\(\widehat f_N\) above incurs an additional prediction-time perturbation from
+fresh generations.  Appendix~\ref{app:legacy-support} gives a sign-reliability
+bound for any fixed weight; extending it uniformly to the data-dependent
+\(\widehat w_{\varepsilon_N}\) requires boundary control beyond the one-sided
+comparator condition used by Theorem~\ref{thm:buffered-main}.
+
+\subsection{Exact optimization as a MILP}
+\label{sec:method-milp}
+
+The buffered objective is discontinuous but admits a direct mixed-integer
+linear implementation.  Introduce \(z_j\in\{0,1\}\), where \(z_j=1\) claims
+that problem \(j\) clears the buffer.  A solver uses a small strictness
+tolerance \(\tau>0\) and any
+\(B_{\rm M}\ge 1+\varepsilon_N+\tau\).  It solves
+\begin{equation}
+\max_{w\in\Delta_K,\,z\in\{0,1\}^Q}\sum_{j=1}^Qz_j
+\quad\text{subject to}\quad
+\langle w,\widehat\Delta_{q_j,a}\rangle
+\ge
+\varepsilon_N+\tau-B_{\rm M}(1-z_j)
+\quad
+\forall j,\ a\ne a^\star(q_j).
+\label{eq:buffered-milp}
+\end{equation}
+If \(z_j=1\), every wrong answer must trail the gold answer by at least
+\(\varepsilon_N+\tau\); if \(z_j=0\), the big-\(M\) term releases the
+constraints.  Thus this is the exact MILP for the \(\tau\)-tightened buffered
+objective, and it approaches Eq.~(\ref{eq:buffered-erm}) as
+\(\tau\downarrow0\).
+The implementation in \texttt{src/tte/milp.py} exposes the threshold as
+\texttt{strict\_margin}.  Setting it to \(\varepsilon_N+\tau\) implements the
+\(\tau\)-tightened objective.  The proof of Theorem~\ref{thm:buffered-main}
+then goes through with the comparator band
+\(0<M_q(w^\star)\le2\varepsilon_N+\tau\), provided
+\(2\varepsilon_N+\tau\le t_0\).  Existing scripts that use \(10^{-4}\) employ
+only a numerical tie-breaking margin and should not be described as evaluations
+of the calibrated buffered estimator.

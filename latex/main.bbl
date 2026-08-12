@@ -1,0 +1,272 @@
+\begin{thebibliography}{41}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Aggarwal et~al.(2023)Aggarwal, Madaan, Yang, and
+  Mausam]{aggarwal2023letsss}
+Pranjal Aggarwal, Aman Madaan, Yiming Yang, and Mausam.
+\newblock Let's sample step by step: Adaptive-consistency for efficient
+  reasoning and coding with llms.
+\newblock pp.\  12375--12396, 2023.
+
+\bibitem[Audibert \& Tsybakov(2005)Audibert and Tsybakov]{audibert2005fastlr}
+Jean-Yves Audibert and A.~Tsybakov.
+\newblock Fast learning rates for plug-in classifiers.
+\newblock \emph{Annals of Statistics}, 35:\penalty0 608--633, 2005.
+
+\bibitem[Bartlett \& Mendelson(2002)Bartlett and
+  Mendelson]{bartlett2002rademacher}
+Peter~L. Bartlett and Shahar Mendelson.
+\newblock Rademacher and {Gaussian} complexities: Risk bounds and structural
+  results.
+\newblock \emph{Journal of Machine Learning Research}, 3:\penalty0 463--482,
+  2002.
+
+\bibitem[Bartlett et~al.(2005)Bartlett, Bousquet, and
+  Mendelson]{bartlett2005local}
+Peter~L. Bartlett, Olivier Bousquet, and Shahar Mendelson.
+\newblock Local {Rademacher} complexities.
+\newblock \emph{The Annals of Statistics}, 33\penalty0 (4):\penalty0
+  1497--1537, 2005.
+
+\bibitem[Bates \& Granger(1969)Bates and Granger]{bates1969combination}
+J.~M. Bates and C.~W.~J. Granger.
+\newblock The combination of forecasts.
+\newblock \emph{Operational Research Quarterly}, 20\penalty0 (4):\penalty0
+  451--468, 1969.
+
+\bibitem[Blumer et~al.(1989)Blumer, Ehrenfeucht, Haussler, and
+  Warmuth]{blumer1989learnability}
+Anselm Blumer, Andrzej Ehrenfeucht, David Haussler, and Manfred~K. Warmuth.
+\newblock Learnability and the {Vapnik}--{Chervonenkis} dimension.
+\newblock \emph{Journal of the ACM}, 36\penalty0 (4):\penalty0 929--965, 1989.
+
+\bibitem[Breiman(1996{\natexlab{a}})]{breiman1996baggingp}
+L.~Breiman.
+\newblock Bagging predictors.
+\newblock \emph{Machine Learning}, 24:\penalty0 123--140, 1996{\natexlab{a}}.
+
+\bibitem[Breiman(1996{\natexlab{b}})]{breiman1996stacked}
+Leo Breiman.
+\newblock Stacked regressions.
+\newblock \emph{Machine Learning}, 24\penalty0 (1):\penalty0 49--64,
+  1996{\natexlab{b}}.
+
+\bibitem[Brown et~al.(2024)Brown, Juravsky, Ehrlich, Clark, Le, R'e, and
+  Mirhoseini]{brown2024largelm}
+Bradley Brown, Jordan Juravsky, Ryan Ehrlich, Ronald Clark, Quoc~V. Le,
+  Christopher R'e, and Azalia Mirhoseini.
+\newblock Large language monkeys: Scaling inference compute with repeated
+  sampling.
+\newblock \emph{ArXiv}, abs/2407.21787, 2024.
+
+\bibitem[Chen et~al.(2024)Chen, Pan, Li, Ding, and Zhou]{chen2024provablesl}
+Yanxi Chen, Xuchen Pan, Yaliang Li, Bolin Ding, and Jingren Zhou.
+\newblock Provable scaling laws for the test-time compute of large language
+  models.
+\newblock 2024.
+
+\bibitem[Cobbe et~al.(2021)Cobbe, Kosaraju, Bavarian, Chen, Jun, Kaiser,
+  Plappert, Tworek, Hilton, Nakano, Hesse, and Schulman]{cobbe2021trainingvt}
+K.~Cobbe, Vineet Kosaraju, Mo~Bavarian, Mark Chen, Heewoo Jun, Lukasz Kaiser,
+  Matthias Plappert, Jerry Tworek, Jacob Hilton, Reiichiro Nakano, Christopher
+  Hesse, and John Schulman.
+\newblock Training verifiers to solve math word problems.
+\newblock \emph{ArXiv}, abs/2110.14168, 2021.
+
+\bibitem[Dziugaite \& Roy(2017)Dziugaite and Roy]{dziugaite2017computing}
+Gintare~Karolina Dziugaite and Daniel~M. Roy.
+\newblock Computing nonvacuous generalization bounds for deep (stochastic)
+  neural networks with many more parameters than training data.
+\newblock In \emph{Proceedings of the Thirty-Third Conference on Uncertainty in
+  Artificial Intelligence (UAI)}, 2017.
+
+\bibitem[Freund \& Schapire(1997)Freund and Schapire]{freund1997adg}
+Y.~Freund and R.~Schapire.
+\newblock A decision-theoretic generalization of on-line learning and an
+  application to boosting.
+\newblock pp.\  23--37, 1997.
+
+\bibitem[Gao et~al.(2022)Gao, Schulman, and Hilton]{gao2022scalinglf}
+Leo Gao, John Schulman, and Jacob Hilton.
+\newblock Scaling laws for reward model overoptimization.
+\newblock pp.\  10835--10866, 2022.
+
+\bibitem[Genest \& Zidek(1986)Genest and Zidek]{genest1986combining}
+Christian Genest and James~V. Zidek.
+\newblock Combining probability distributions: A critique and an annotated
+  bibliography.
+\newblock \emph{Statistical Science}, 1\penalty0 (1):\penalty0 114--135, 1986.
+
+\bibitem[Hendrycks et~al.(2021)Hendrycks, Burns, Kadavath, Arora, Basart, Tang,
+  Song, and Steinhardt]{hendrycks2021measuringmp}
+Dan Hendrycks, Collin Burns, Saurav Kadavath, Akul Arora, Steven Basart, Eric
+  Tang, D.~Song, and J.~Steinhardt.
+\newblock Measuring mathematical problem solving with the math dataset.
+\newblock \emph{ArXiv}, abs/2103.03874, 2021.
+
+\bibitem[Hoeffding(1963)]{hoeffding1963probability}
+Wassily Hoeffding.
+\newblock Probability inequalities for sums of bounded random variables.
+\newblock \emph{Journal of the American Statistical Association}, 58\penalty0
+  (301):\penalty0 13--30, 1963.
+
+\bibitem[Jiang et~al.(2023)Jiang, Ren, and Lin]{jiang2023llmblenderel}
+Dongfu Jiang, Xiang Ren, and Bill~Yuchen Lin.
+\newblock Llm-blender: Ensembling large language models with pairwise ranking
+  and generative fusion.
+\newblock pp.\  14165--14178, 2023.
+
+\bibitem[Koltchinskii et~al.(2001)Koltchinskii, Panchenko, and
+  Lozano]{koltchinskii2001furthereo}
+V.~Koltchinskii, D.~Panchenko, and Fernando Lozano.
+\newblock Further explanation of the effectiveness of voting methods: The game
+  between margins and weights.
+\newblock pp.\  241--255, 2001.
+
+\bibitem[Koltchinskii(2006)]{koltchinskii2006local}
+Vladimir Koltchinskii.
+\newblock Local {Rademacher} complexities and oracle inequalities in risk
+  minimization.
+\newblock \emph{The Annals of Statistics}, 34\penalty0 (6):\penalty0
+  2593--2656, 2006.
+
+\bibitem[Komiyama et~al.(2026)Komiyama, Oba, and Oyamada]{komiyama2026best}
+Junpei Komiyama, Daisuke Oba, and Masafumi Oyamada.
+\newblock Best-of-infinity: Asymptotic performance of test-time llm ensembling.
+\newblock In \emph{The Fourteenth International Conference on Learning
+  Representations}, 2026.
+
+\bibitem[Littlestone \& Warmuth(1994)Littlestone and
+  Warmuth]{littlestone1994weighted}
+Nick Littlestone and Manfred~K. Warmuth.
+\newblock The weighted majority algorithm.
+\newblock \emph{Information and Computation}, 108\penalty0 (2):\penalty0
+  212--261, 1994.
+
+\bibitem[Mammen \& Tsybakov(1999)Mammen and Tsybakov]{mammen1999smooth}
+Enno Mammen and Alexandre~B. Tsybakov.
+\newblock Smooth discrimination analysis.
+\newblock \emph{The Annals of Statistics}, 27\penalty0 (6):\penalty0
+  1808--1829, 1999.
+
+\bibitem[Massart \& N{\'e}d{\'e}lec(2006)Massart and
+  N{\'e}d{\'e}lec]{massart2006risk}
+Pascal Massart and {\'E}lodie N{\'e}d{\'e}lec.
+\newblock Risk bounds for statistical learning.
+\newblock \emph{The Annals of Statistics}, 34\penalty0 (5):\penalty0
+  2326--2366, 2006.
+
+\bibitem[McAllester(1999)]{mcallester1999pacbayes}
+David~A. McAllester.
+\newblock {PAC}-{Bayesian} model averaging.
+\newblock In \emph{Proceedings of the Twelfth Annual Conference on
+  Computational Learning Theory (COLT)}, pp.\  164--170, 1999.
+
+\bibitem[Rein et~al.(2023)Rein, Hou, Stickland, Petty, Pang, Dirani, Michael,
+  and Bowman]{rein2023gpqaag}
+David Rein, Betty~Li Hou, Asa~Cooper Stickland, Jackson Petty, Richard~Yuanzhe
+  Pang, Julien Dirani, Julian Michael, and Samuel~R. Bowman.
+\newblock Gpqa: A graduate-level google-proof q\&a benchmark.
+\newblock \emph{ArXiv}, abs/2311.12022, 2023.
+
+\bibitem[Sauer(1972)]{sauer1972density}
+N.~Sauer.
+\newblock On the density of families of sets.
+\newblock \emph{Journal of Combinatorial Theory, Series A}, 13\penalty0
+  (1):\penalty0 145--147, 1972.
+
+\bibitem[Schapire et~al.(1997)Schapire, Freund, Barlett, and
+  Lee]{schapire1997boostingtm}
+R.~Schapire, Y.~Freund, Peter Barlett, and Wee~Sun Lee.
+\newblock Boosting the margin: A new explanation for the effectiveness of
+  voting methods.
+\newblock pp.\  322--330, 1997.
+
+\bibitem[Shelah(1972)]{shelah1972combinatorial}
+Saharon Shelah.
+\newblock A combinatorial problem; stability and order for models and theories
+  in infinitary languages.
+\newblock \emph{Pacific Journal of Mathematics}, 41\penalty0 (1):\penalty0
+  247--261, 1972.
+
+\bibitem[Snell et~al.(2025)Snell, Lee, Xu, and Kumar]{snell2025scalinglt}
+C.~Snell, Jaehoon Lee, Kelvin Xu, and Aviral Kumar.
+\newblock Scaling llm test-time compute optimally can be more effective than
+  scaling parameters for reasoning.
+\newblock 2025.
+
+\bibitem[Stone(1961)]{stone1961opinionpool}
+M.~Stone.
+\newblock The opinion pool.
+\newblock \emph{The Annals of Mathematical Statistics}, 32\penalty0
+  (4):\penalty0 1339--1342, 1961.
+
+\bibitem[Tsybakov(2004)]{tsybakov2004optimal}
+Alexandre~B. Tsybakov.
+\newblock Optimal aggregation of classifiers in statistical learning.
+\newblock \emph{The Annals of Statistics}, 32\penalty0 (1):\penalty0 135--166,
+  2004.
+
+\bibitem[Tsybakov(2009)]{tsybakov2009introduction}
+Alexandre~B. Tsybakov.
+\newblock \emph{Introduction to Nonparametric Estimation}.
+\newblock Springer Series in Statistics. Springer, 2009.
+
+\bibitem[Vapnik \& Chervonenkis(1971)Vapnik and
+  Chervonenkis]{vapnik1971uniform}
+V.~N. Vapnik and A.~Ya. Chervonenkis.
+\newblock On the uniform convergence of relative frequencies of events to their
+  probabilities.
+\newblock \emph{Theory of Probability and Its Applications}, 16\penalty0
+  (2):\penalty0 264--280, 1971.
+
+\bibitem[Viallard et~al.(2021)Viallard, Germain, Habrard, and
+  Morvant]{viallard2021selfboundingmv}
+Paul Viallard, Pascal Germain, Amaury Habrard, and Emilie Morvant.
+\newblock Self-bounding majority vote learning algorithms by the direct
+  minimization of a tight pac-bayesian c-bound.
+\newblock \emph{ArXiv}, abs/2104.13626, 2021.
+
+\bibitem[Wang et~al.(2024)Wang, Wang, Athiwaratkun, Zhang, and
+  Zou]{wang2024mixtureofagentsel}
+Junlin Wang, Jue Wang, Ben Athiwaratkun, Ce~Zhang, and James Zou.
+\newblock Mixture-of-agents enhances large language model capabilities.
+\newblock \emph{ArXiv}, abs/2406.04692, 2024.
+
+\bibitem[Wang et~al.(2022)Wang, Wei, Schuurmans, Le, Chi, and
+  Zhou]{wang2022selfconsistencyic}
+Xuezhi Wang, Jason Wei, Dale Schuurmans, Quoc Le, Ed~H. Chi, and Denny Zhou.
+\newblock Self-consistency improves chain of thought reasoning in language
+  models.
+\newblock \emph{ArXiv}, abs/2203.11171, 2022.
+
+\bibitem[Wolpert(1992)]{wolpert1992stacked}
+David~H. Wolpert.
+\newblock Stacked generalization.
+\newblock \emph{Neural Networks}, 5\penalty0 (2):\penalty0 241--259, 1992.
+
+\bibitem[Wu et~al.(2024)Wu, Sun, Li, Welleck, and Yang]{wu2024inferencesl}
+Yangzhen Wu, Zhiqing Sun, Shanda Li, S.~Welleck, and Yiming Yang.
+\newblock Inference scaling laws: An empirical analysis of compute-optimal
+  inference for llm problem-solving.
+\newblock 2024.
+
+\bibitem[Wu et~al.(2021)Wu, Masegosa, Lorenzen, Igel, and
+  Seldin]{wu2021chebyshevcantellipi}
+Yi-Shan Wu, A.~Masegosa, S.~Lorenzen, C.~Igel, and Yevgeny Seldin.
+\newblock Chebyshev-cantelli pac-bayes-bennett inequality for the weighted
+  majority vote.
+\newblock pp.\  12625--12636, 2021.
+
+\bibitem[Zaslavsky(1975)]{zaslavsky1975facing}
+Thomas Zaslavsky.
+\newblock Facing up to arrangements: Face-count formulas for partitions of
+  space by hyperplanes.
+\newblock \emph{Memoirs of the American Mathematical Society}, 1\penalty0
+  (154), 1975.
+
+\end{thebibliography}

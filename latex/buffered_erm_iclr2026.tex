@@ -1,0 +1,61 @@
+\documentclass{article}
+\usepackage{iclr2026_conference,times}
+
+\input{math_commands.tex}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{assumption}{Assumption}
+
+\providecommand{\argmax}{\mathop{\mathrm{arg\,max}}\limits}
+\providecommand{\argmin}{\mathop{\mathrm{arg\,min}}\limits}
+
+\title{Buffered ERM for Finite-Generation\\LLM Ensembles}
+\author{Anonymous Authors}
+
+% Uncomment only for a camera-ready version.
+% \iclrfinalcopy
+
+\begin{document}
+\maketitle
+
+\input{buffered_frontmatter_reviewed}
+\input{buffered_method_reviewed}
+\input{buffered_theory_reviewed}
+\input{buffered_empirical_status_reviewed}
+\input{buffered_conclusion_reviewed}
+
+\bibliography{buffered_erm_iclr2026}
+\bibliographystyle{iclr2026_conference}
+
+\clearpage
+\appendix
+\input{buffered_legacy_carryover}
+\clearpage
+\input{buffered_fast_rate_proofs}
+\input{buffered_full_legacy_tables}
+
+\end{document}

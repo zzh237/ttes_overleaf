@@ -1,0 +1,346 @@
+\section{Theoretical Analysis}
+\label{sec:theory}
+
+Let \(w^\star\in\arg\min_{w\in\Delta_K}R(w)\).  Our default guarantee needs
+only a one-sided condition at this fixed comparator.
+
+\begin{assumption}[Comparator margin condition]
+\label{ass:comp-margin}
+There are \(C_m>0\), \(\beta>0\), and \(t_0>0\) such that
+\[
+\mathbb P_{q\sim\mathcal D}
+\{0<M_q(w^\star)\le t\}
+\le C_m t^\beta,
+\qquad 0<t\le t_0.
+\]
+\end{assumption}
+
+This condition controls only correctly solved problems that are close to a
+tie.  It says nothing about negative margins and, importantly, imposes no
+margin condition at the random estimator.
+
+\subsection{Uniform control of finite-generation margins}
+\label{sec:theory-concentration}
+
+\begin{lemma}[Uniform training-sample margin accuracy]
+\label{lem:margin-accuracy}
+For \(\delta\in(0,1)\), set
+\(\varepsilon_N(\delta)=\sqrt{2\log(8KAQ/\delta)/N}\).  With probability at
+least \(1-\delta/2\) over the generations, conditional on the sampled questions,
+\[
+\sup_{j\le Q}\sup_{w\in\Delta_K}
+|\widehat M_{q_j}(w)-M_{q_j}(w)|
+\le\varepsilon_N(\delta).
+\]
+\end{lemma}
+
+\begin{proof}
+Hoeffding's inequality and a union bound over at most \(KAQ\) answer
+frequencies give
+\[
+\max_{j,i,a}
+|\widehat p_i(a\mid q_j)-p_i(a\mid q_j)|
+\le\frac{\varepsilon_N}{2}
+\]
+with probability at least \(1-\delta/2\).  Every coordinate of an answer-gap
+vector then has error at most \(\varepsilon_N\).  Since
+\(\|w\|_1=1\), each weighted gap has the same bound; stability of the minimum
+over wrong answers preserves it.
+\end{proof}
+
+On this event, for every training question and every \(w\),
+\begin{equation}
+\mathbf 1\{M_{q_j}(w)\le0\}
+\le
+\mathbf 1\{\widehat M_{q_j}(w)\le\varepsilon_N\}
+\le
+\mathbf 1\{M_{q_j}(w)\le2\varepsilon_N\}.
+\label{eq:indicator-sandwich}
+\end{equation}
+This uniform sandwich is the reason for introducing the buffer.
+
+For \(t\ge0\), define
+\(\mathcal F_t=\{q\mapsto\mathbf 1\{M_q(w)\le t\}:w\in\Delta_K\}\).
+On \(Q\) fixed questions, at most \(Q(A-1)\) affine hyperplanes partition the
+\((K-1)\)-dimensional simplex.  Thus
+\[
+\Pi_{\mathcal F_t}(Q)
+\le
+\sum_{r=0}^{K-1}\binom{Q(A-1)}r,
+\]
+and standard VC symmetrization yields, simultaneously for
+\(t\in\{0,2\varepsilon_N\}\),
+\begin{equation}
+\sup_{w\in\Delta_K}
+\left|
+\frac1Q\sum_{j=1}^Q\mathbf 1\{M_{q_j}(w)\le t\}
+-
+\mathbb P\{M_q(w)\le t\}
+\right|
+\le
+\mathfrak v_Q(\delta),
+\label{eq:vq-event}
+\end{equation}
+where
+\[
+\mathfrak v_Q(\delta)
+=
+C\sqrt{
+\frac{(K-1)\log(eAQ)+\log(1/\delta)}{Q}
+}
+\]
+for a universal constant \(C\).
+
+\subsection{The robust two-sample-size guarantee}
+\label{sec:theory-main}
+
+\begin{theorem}[Buffered ERM]
+\label{thm:buffered-main}
+Suppose Assumption~\ref{ass:comp-margin} holds and
+\(2\varepsilon_N(\delta)\le t_0\).  Let
+\(\widehat w_\varepsilon\) minimize
+\(\widehat R_{\varepsilon_N}\) in Eq.~(\ref{eq:buffered-erm}).  With
+probability at least \(1-\delta\) over both the \(Q\) questions and all
+generations,
+\begin{equation}
+R(\widehat w_\varepsilon)-R(w^\star)
+\le
+2\mathfrak v_Q(\delta)
++
+C_m(2\varepsilon_N(\delta))^\beta.
+\label{eq:buffered-main-bound}
+\end{equation}
+Consequently,
+\begin{equation}
+R(\widehat w_\varepsilon)-R(w^\star)
+\lesssim
+\sqrt{\frac{(K-1)\log(eAQ)+\log(1/\delta)}{Q}}
++
+C_m
+\left(\frac{\log(KAQ/\delta)}{N}\right)^{\beta/2}.
+\label{eq:buffered-rate}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Write
+\(\widetilde R_t(w)=Q^{-1}\sum_j\mathbf 1\{M_{q_j}(w)\le t\}\) and
+\(R_t(w)=\mathbb P\{M_q(w)\le t\}\).  On the intersection of the events in
+Lemma~\ref{lem:margin-accuracy} and Eq.~(\ref{eq:vq-event}),
+\[
+\begin{aligned}
+R(\widehat w_\varepsilon)
+&\le \widetilde R_0(\widehat w_\varepsilon)+\mathfrak v_Q \\
+&\le \widehat R_{\varepsilon_N}(\widehat w_\varepsilon)+\mathfrak v_Q \\
+&\le \widehat R_{\varepsilon_N}(w^\star)+\mathfrak v_Q \\
+&\le \widetilde R_{2\varepsilon_N}(w^\star)+\mathfrak v_Q \\
+&\le R_{2\varepsilon_N}(w^\star)+2\mathfrak v_Q.
+\end{aligned}
+\]
+The remaining difference is exactly the positive comparator band:
+\[
+R_{2\varepsilon_N}(w^\star)-R(w^\star)
+=
+\mathbb P\{0<M_q(w^\star)\le2\varepsilon_N\}
+\le C_m(2\varepsilon_N)^\beta.
+\]
+The two events have joint probability at least \(1-\delta\); substitution of
+their definitions gives Eq.~(\ref{eq:buffered-rate}).
+\end{proof}
+
+The theorem separates two sources of uncertainty in learning the weights.  The
+\(Q\)-term is ordinary generalization across questions.  The \(N\)-term is the
+mass of comparator-correct training questions whose margins cannot be
+distinguished from a tie at resolution \(N^{-1/2}\).  The latter can decay
+faster than \(N^{-1/2}\) because the target is a thresholded correctness
+decision rather than smooth parameter estimation.
+
+\subsection{Why a margin condition does not imply a fast
+\texorpdfstring{\(Q\)}{Q}-rate}
+\label{sec:theory-obstruction}
+
+The margin condition controls how much probability lies near a decision
+boundary.  It does not say whether two well-separated regions of the weight
+simplex have nearly identical risks.
+
+\begin{proposition}[Hard margin with root-\(Q\) distinguishability]
+\label{prop:counterexample}
+There is a family with two models, two answers, \(N=\infty\), and a hard margin
+at every optimum for which no learner can uniformly guarantee excess risk
+\(o(Q^{-1/2})\) from \(Q\) labeled questions.
+\end{proposition}
+
+\begin{proof}
+Write \(w=(t,1-t)\).  On type \(+\) questions, model 1 is always correct and
+model 2 is always wrong, so \(M_q(w)=2t-1\).  On type \(-\) questions the
+roles reverse and \(M_q(w)=1-2t\).  Consider distributions
+\(\mathcal D_+\) and \(\mathcal D_-\) assigning type \(+\) probability
+\(1/2+\eta/2\) and \(1/2-\eta/2\), respectively.  The optimal side of
+\(t=1/2\) reverses between the two distributions; choosing the wrong side
+costs excess risk \(\eta\).  At a pure optimal weight, every margin has
+magnitude one, so there is no near-boundary mass.
+
+Learning the correct side from \(Q\) questions is nevertheless testing two
+coins with biases \(1/2\pm\eta/2\).  For
+\(\eta=c/\sqrt Q\) with a sufficiently small constant \(c\), their
+\(Q\)-sample laws have total variation bounded away from one.  Le Cam's
+two-point argument therefore forces a constant probability of choosing the
+wrong side under one of the distributions, and hence excess risk of order
+\(Q^{-1/2}\).
+\end{proof}
+
+The obstruction is global identifiability, not boundary noise.  We therefore
+state faster \(Q\)-rates only after adding a condition that risk grows when the
+weights leave the optimum.
+
+\subsection{Optional fast
+\texorpdfstring{\(Q\)}{Q}-rates under identifiable geometry}
+\label{sec:theory-fast}
+
+\begin{assumption}[Absolute margin and risk growth]
+\label{ass:growth}
+There are \(C_m,\beta,t_0,c_g,\gamma,r_0,c_{\rm sep}>0\) such that
+\begin{equation}
+\mathbb P\{|M_q(w^\star)|\le t\}\le C_m t^\beta
+\quad(0<t\le t_0),
+\label{eq:absolute-margin}
+\end{equation}
+and
+\begin{equation}
+R(w)-R(w^\star)\ge
+\begin{cases}
+c_g\|w-w^\star\|_1^\gamma,
+&\|w-w^\star\|_1\le r_0,\\
+c_{\rm sep},
+&\|w-w^\star\|_1>r_0.
+\end{cases}
+\label{eq:risk-growth}
+\end{equation}
+\end{assumption}
+
+Let
+\(D(w,w^\star)=\mathbb P\{\ell_q(w)\ne\ell_q(w^\star)\}\).
+
+\begin{proposition}[Geometry implies a Bernstein condition]
+\label{prop:geom-bernstein}
+Under Assumption~\ref{ass:growth},
+\begin{equation}
+D(w,w^\star)
+\le
+B\{R(w)-R(w^\star)\}^{\alpha},
+\qquad
+\alpha=\min\{1,\beta/\gamma\},
+\label{eq:bernstein-condition}
+\end{equation}
+for a finite constant \(B\).
+\end{proposition}
+
+\begin{proof}
+Every contender gap is one-Lipschitz in \(\ell_1\), and taking a minimum
+preserves that property.  If the losses at \(w\) and \(w^\star\) disagree,
+then \(|M_q(w^\star)|\le\|w-w^\star\|_1\).  The absolute-margin condition
+therefore gives
+\(D(w,w^\star)\le C_m\|w-w^\star\|_1^\beta\) locally.  Inverting the local
+risk-growth condition yields the exponent \(\beta/\gamma\); truncate it at
+one because risks are bounded.  Outside the local ball, global separation and
+\(D\le1\) complete the bound after enlarging the constant.  If
+\(t_0<\|w-w^\star\|_1\le r_0\), the local growth condition itself gives
+\(R(w)-R(w^\star)\ge c_gt_0^\gamma\), so this intermediate annulus is covered
+by the same constant-enlargement argument.
+\end{proof}
+
+\begin{lemma}[Localized finite-growth bound]
+\label{lem:localized-vc}
+Let \(\mathcal L=\{\ell_q(w):w\in\Delta_K\}\) be a binary loss class with
+minimizer \(w^\star\).  Suppose
+\(\log\Pi_{\mathcal L}(n)\le V_n\) and \(V_{2Q}\le c_0V_Q\).  If
+\[
+\mathbb P\{\ell_q(w)\ne\ell_q(w^\star)\}
+\le
+B\{R(w)-R(w^\star)\}^{\alpha},
+\qquad 0<\alpha\le1,
+\]
+and a data-dependent \(\widetilde w\) satisfies
+\[
+\frac1Q\sum_{j=1}^Q\ell_{q_j}(\widetilde w)
+\le
+\frac1Q\sum_{j=1}^Q\ell_{q_j}(w^\star)+a,
+\]
+then, with probability at least \(1-\delta\),
+\begin{equation}
+R(\widetilde w)-R(w^\star)
+\le
+C\left[
+a+
+\left(\frac{V_Q+\log(1/\delta)}{Q}\right)^{1/(2-\alpha)}
++\frac{V_Q+\log(1/\delta)}{Q}
+\right],
+\label{eq:localized-vc}
+\end{equation}
+where \(C\) depends only on \(B\), \(\alpha\), and \(c_0\).
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+For the excess loss \(g_w=\ell_q(w)-\ell_q(w^\star)\), the Bernstein premise
+gives \(\mathbb E g_w^2\le B(\mathbb E g_w)^\alpha\).  Peeling the class into
+shells \(r<\mathbb E g_w\le2r\), and applying Bernstein concentration with
+the growth bound on each shell, gives deviation
+\[
+O\!\left(
+\sqrt{\frac{r^\alpha\{V_Q+\log(1/\delta)\}}{Q}}
++\frac{V_Q+\log(1/\delta)}{Q}
+\right).
+\]
+The fixed point in \(r\), together with the approximate-ERM slack \(a\),
+yields Eq.~(\ref{eq:localized-vc}).  This is the standard relative
+VC/localization argument \citep{massart2006risk,bartlett2005local,
+koltchinskii2006local}; Appendix~\ref{app:fast-rate-proofs} gives the
+specialization used here, including the \(2Q\)-sample growth step and the
+data-dependent output.
+\end{proof}
+
+\begin{theorem}[Buffered ERM with an optional fast \(Q\)-rate]
+\label{thm:fast}
+Under Assumption~\ref{ass:growth}, let
+\(\alpha=\min\{1,\beta/\gamma\}\).  For the same buffered estimator as in
+Theorem~\ref{thm:buffered-main}, with probability at least \(1-\delta\),
+\begin{equation}
+R(\widehat w_\varepsilon)-R(w^\star)
+\le
+C
+\left(
+\frac{(K-1)\log(eAQ)+\log(1/\delta)}{Q}
+\right)^{1/(2-\alpha)}
++
+C'
+\left(
+\frac{\log(KAQ/\delta)}{N}
+\right)^{\beta/2}.
+\label{eq:fast-rate}
+\end{equation}
+The constants depend on the margin and growth parameters, not on
+\(Q,N,K,\) or \(A\).
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+The indicator sandwich and optimality of the buffered estimator show that its
+clean empirical risk exceeds that of \(w^\star\) by at most the empirical mass
+of \(\{0<M_q(w^\star)\le2\varepsilon_N\}\).  Bernstein concentration for this
+fixed band makes the slack
+\(O(\varepsilon_N^\beta+\log(1/\delta)/Q)\).
+Proposition~\ref{prop:geom-bernstein} supplies the Bernstein premise of
+Lemma~\ref{lem:localized-vc}, with
+\(V_Q=(K-1)\log(eAQ)\).  Applying that lemma to the preceding empirical slack
+gives the localized \(Q\)-term; the band mass contributes the finite-\(N\)
+term in Eq.~(\ref{eq:fast-rate}).  Appendix~\ref{app:fast-rate-proofs} tracks
+the three confidence events and proves the full statement.
+\end{proof}
+
+The exponent is governed by two distinct geometric quantities.  \(\beta\)
+measures the mass of questions that can change status near \(w^\star\);
+\(\gamma\) measures how much the losses and gains fail to cancel when weights
+move.  If crossings mostly hurt, then \(\gamma=\beta\), \(\alpha=1\), and the
+\(Q\)-term is nearly \(Q^{-1}\).  If first-order losses and gains cancel, then
+\(\gamma=\beta+1\), giving
+\(\alpha=\beta/(\beta+1)\).  The latter exponent is a special geometry, not a
+consequence of the margin condition by itself.

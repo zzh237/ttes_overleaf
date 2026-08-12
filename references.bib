@@ -1,0 +1,231 @@
+% ============================================================================
+% Curated references for the (N,Q) excess-risk / LLM-ensemble-weighting paper.
+% Extracted by hand from the prose citations in:
+%   boinf_clean_note.tex, boinf_proof.tex, boinf_buffered_theory_v1.tex
+% (none of those notes used \cite; all references were named inline.)
+%
+% NOTE: verify the Komiyama "Best-of-infinity" entry below before submission —
+% exact title/venue/year/arXiv id could not be confirmed and are placeholders.
+% ============================================================================
+
+% ---- Source paper being reframed -----------------------------------------
+@inproceedings{komiyama2026best,
+  title={Best-of-infinity: Asymptotic performance of test-time llm ensembling},
+  author={Komiyama, Junpei and Oba, Daisuke and Oyamada, Masafumi},
+  booktitle={The Fourteenth International Conference on Learning Representations},
+  year={2026}
+}
+
+% ---- Opinion pools / forecast combination / stacking (framing) -----------
+@article{stone1961opinionpool,
+  title        = {The Opinion Pool},
+  author       = {Stone, M.},
+  journal      = {The Annals of Mathematical Statistics},
+  volume       = {32},
+  number       = {4},
+  pages        = {1339--1342},
+  year         = {1961},
+  publisher    = {Institute of Mathematical Statistics}
+}
+
+@article{genest1986combining,
+  title        = {Combining Probability Distributions: A Critique and an Annotated Bibliography},
+  author       = {Genest, Christian and Zidek, James V.},
+  journal      = {Statistical Science},
+  volume       = {1},
+  number       = {1},
+  pages        = {114--135},
+  year         = {1986}
+}
+
+@article{wolpert1992stacked,
+  title        = {Stacked Generalization},
+  author       = {Wolpert, David H.},
+  journal      = {Neural Networks},
+  volume       = {5},
+  number       = {2},
+  pages        = {241--259},
+  year         = {1992},
+  publisher    = {Elsevier}
+}
+
+@article{breiman1996stacked,
+  title        = {Stacked Regressions},
+  author       = {Breiman, Leo},
+  journal      = {Machine Learning},
+  volume       = {24},
+  number       = {1},
+  pages        = {49--64},
+  year         = {1996},
+  publisher    = {Springer}
+}
+
+@article{bates1969combination,
+  title        = {The Combination of Forecasts},
+  author       = {Bates, J. M. and Granger, C. W. J.},
+  journal      = {Operational Research Quarterly},
+  volume       = {20},
+  number       = {4},
+  pages        = {451--468},
+  year         = {1969}
+}
+
+@article{littlestone1994weighted,
+  title        = {The Weighted Majority Algorithm},
+  author       = {Littlestone, Nick and Warmuth, Manfred K.},
+  journal      = {Information and Computation},
+  volume       = {108},
+  number       = {2},
+  pages        = {212--261},
+  year         = {1994},
+  publisher    = {Elsevier}
+}
+
+% ---- Capacity / VC theory -------------------------------------------------
+@article{blumer1989learnability,
+  title        = {Learnability and the {Vapnik}--{Chervonenkis} Dimension},
+  author       = {Blumer, Anselm and Ehrenfeucht, Andrzej and Haussler, David and Warmuth, Manfred K.},
+  journal      = {Journal of the ACM},
+  volume       = {36},
+  number       = {4},
+  pages        = {929--965},
+  year         = {1989},
+  publisher    = {ACM}
+}
+
+@article{vapnik1971uniform,
+  title        = {On the Uniform Convergence of Relative Frequencies of Events to Their Probabilities},
+  author       = {Vapnik, V. N. and Chervonenkis, A. Ya.},
+  journal      = {Theory of Probability and Its Applications},
+  volume       = {16},
+  number       = {2},
+  pages        = {264--280},
+  year         = {1971}
+}
+
+@article{sauer1972density,
+  title        = {On the Density of Families of Sets},
+  author       = {Sauer, N.},
+  journal      = {Journal of Combinatorial Theory, Series A},
+  volume       = {13},
+  number       = {1},
+  pages        = {145--147},
+  year         = {1972},
+  publisher    = {Elsevier}
+}
+
+@article{shelah1972combinatorial,
+  title        = {A Combinatorial Problem; Stability and Order for Models and Theories in Infinitary Languages},
+  author       = {Shelah, Saharon},
+  journal      = {Pacific Journal of Mathematics},
+  volume       = {41},
+  number       = {1},
+  pages        = {247--261},
+  year         = {1972}
+}
+
+@article{zaslavsky1975facing,
+  title        = {Facing Up to Arrangements: Face-Count Formulas for Partitions of Space by Hyperplanes},
+  author       = {Zaslavsky, Thomas},
+  journal      = {Memoirs of the American Mathematical Society},
+  volume       = {1},
+  number       = {154},
+  year         = {1975}
+}
+
+% ---- Concentration --------------------------------------------------------
+@article{hoeffding1963probability,
+  title        = {Probability Inequalities for Sums of Bounded Random Variables},
+  author       = {Hoeffding, Wassily},
+  journal      = {Journal of the American Statistical Association},
+  volume       = {58},
+  number       = {301},
+  pages        = {13--30},
+  year         = {1963},
+  publisher    = {Taylor \& Francis}
+}
+
+% ---- Margin / low-noise (Tsybakov) rates ----------------------------------
+@article{mammen1999smooth,
+  title        = {Smooth Discrimination Analysis},
+  author       = {Mammen, Enno and Tsybakov, Alexandre B.},
+  journal      = {The Annals of Statistics},
+  volume       = {27},
+  number       = {6},
+  pages        = {1808--1829},
+  year         = {1999}
+}
+
+@article{tsybakov2004optimal,
+  title        = {Optimal Aggregation of Classifiers in Statistical Learning},
+  author       = {Tsybakov, Alexandre B.},
+  journal      = {The Annals of Statistics},
+  volume       = {32},
+  number       = {1},
+  pages        = {135--166},
+  year         = {2004}
+}
+
+@book{tsybakov2009introduction,
+  title        = {Introduction to Nonparametric Estimation},
+  author       = {Tsybakov, Alexandre B.},
+  series       = {Springer Series in Statistics},
+  year         = {2009},
+  publisher    = {Springer}
+}
+
+@article{massart2006risk,
+  title        = {Risk Bounds for Statistical Learning},
+  author       = {Massart, Pascal and N{\'e}d{\'e}lec, {\'E}lodie},
+  journal      = {The Annals of Statistics},
+  volume       = {34},
+  number       = {5},
+  pages        = {2326--2366},
+  year         = {2006}
+}
+
+% ---- Local Rademacher / localized fast rates ------------------------------
+@article{bartlett2005local,
+  title        = {Local {Rademacher} Complexities},
+  author       = {Bartlett, Peter L. and Bousquet, Olivier and Mendelson, Shahar},
+  journal      = {The Annals of Statistics},
+  volume       = {33},
+  number       = {4},
+  pages        = {1497--1537},
+  year         = {2005}
+}
+
+@article{koltchinskii2006local,
+  title        = {Local {Rademacher} Complexities and Oracle Inequalities in Risk Minimization},
+  author       = {Koltchinskii, Vladimir},
+  journal      = {The Annals of Statistics},
+  volume       = {34},
+  number       = {6},
+  pages        = {2593--2656},
+  year         = {2006}
+}
+
+@article{bartlett2002rademacher,
+  title        = {Rademacher and {Gaussian} Complexities: Risk Bounds and Structural Results},
+  author       = {Bartlett, Peter L. and Mendelson, Shahar},
+  journal      = {Journal of Machine Learning Research},
+  volume       = {3},
+  pages        = {463--482},
+  year         = {2002}
+}
+
+% ---- PAC-Bayes ------------------------------------------------------------
+@inproceedings{mcallester1999pacbayes,
+  title        = {{PAC}-{Bayesian} Model Averaging},
+  author       = {McAllester, David A.},
+  booktitle    = {Proceedings of the Twelfth Annual Conference on Computational Learning Theory (COLT)},
+  pages        = {164--170},
+  year         = {1999}
+}
+
+@inproceedings{dziugaite2017computing,
+  title        = {Computing Nonvacuous Generalization Bounds for Deep (Stochastic) Neural Networks with Many More Parameters than Training Data},
+  author       = {Dziugaite, Gintare Karolina and Roy, Daniel M.},
+  booktitle    = {Proceedings of the Thirty-Third Conference on Uncertainty in Artificial Intelligence (UAI)},
+  year         = {2017}
+}

@@ -1,0 +1,46 @@
+\section{Limitations}
+\label{sec:limitations}
+
+The analysis assumes that candidate answers can be mapped to a finite set and
+that generations are conditionally independent given a question and model.
+Correlated decoding traces or unstable answer extraction would require a
+different concentration radius.  The uniform radius is also conservative: it
+pays a logarithmic factor for all observed model--answer--question
+coordinates, even when many answers are rare or impossible.  Data-dependent
+or variance-sensitive buffers may be substantially smaller.
+
+The main guarantee targets the clean population risk of weights fitted from
+finite-generation training margins.  A deployment that estimates answer
+frequencies from fresh finite rollouts has a second perturbation.  The retained
+fixed-weight sign bound describes that effect, but controlling it uniformly at
+the random fitted weight would need an additional margin condition or a
+selective prediction rule.
+
+The optional fast \(Q\)-rate uses identifiable risk growth and global
+separation.  These assumptions are intentionally stronger than a margin
+condition and should be checked rather than treated as generic properties of
+LLM benchmarks.  Finally, the tracked real-data analysis predates the
+calibrated buffered estimator.  It supports the finite-sample motivation but
+does not replace the direct \(Q\)-by-\(N\) evaluation specified in
+Section~\ref{sec:experiments-required}.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+Finite-generation ensemble weighting is governed by two sampling operations
+that should not be collapsed into one.  Questions determine how well the
+weight vector generalizes; generations determine whether a question's
+gold-versus-contender margin can be resolved.  Buffering at the latter
+uncertainty scale yields a clean comparison with the best fixed population
+weight and a robust \(Q^{-1/2}+N^{-\beta/2}\) guarantee up to logarithmic
+factors.  The hard-margin counterexample also draws a useful boundary: local
+separation from zero is enough to control finite-generation errors, but not
+enough to identify the best region of the weight simplex quickly.  Faster
+learning across questions requires additional risk geometry.
+
+This theorem hierarchy leaves a concrete empirical next step.  The existing
+MILP already exposes the required margin threshold; a direct benchmark study
+must now vary \(Q\) and \(N\), compare buffered and unbuffered fits, and retain
+the split-level artifacts needed to distinguish the two terms.  Until then,
+the theorem, the obstruction, and the legacy diagnostics make separate,
+auditable claims.

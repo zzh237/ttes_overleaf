@@ -1,0 +1,161 @@
+\begin{abstract}
+Weighted aggregation of frozen large language models is often analyzed as if
+each model's answer distribution were known.  A deployed ensemble instead sees
+empirical answer frequencies from finitely many generations.  This creates two
+independent sample sizes: \(Q\) labeled questions used to learn the ensemble
+weights and \(N\) generations used to estimate each model's answer distribution
+on each labeled training question.  Raw empirical risk minimization can exploit
+sign errors near ties.  We study a margin-buffered estimator that counts a
+training question as solved only when the empirical gold-answer margin exceeds
+its finite-generation uncertainty radius.  Under a one-sided margin condition
+at the best fixed weight, the clean population excess risk of the learned
+weights is the sum of a standard
+\(Q^{-1/2}\) generalization term and an
+\(N^{-\beta/2}\) boundary-resolution term, up to logarithmic factors.  A
+hard-margin two-point construction shows that a margin condition alone cannot
+improve the \(Q\)-rate.  Faster \(Q\)-rates become available only after adding
+identifiable risk growth and an absolute margin condition.  We give a direct
+MILP implementation, preserve reproducible finite-generation diagnostics from
+the earlier system, and state separately the benchmark experiment still needed
+to evaluate the calibrated buffer itself.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+Repeated sampling has become a standard test-time tool for language models.
+Self-consistency aggregates multiple reasoning paths, best-of-\(N\) procedures
+select among sampled candidates, and multi-model systems combine complementary
+models or agents \citep{wang2022selfconsistencyic,brown2024largelm,
+jiang2023llmblenderel,wang2024mixtureofagentsel}.  These methods turn inference
+compute into improved answer coverage, but they also make the statistical unit
+of observation easy to blur.  An ensemble is evaluated across questions, while
+the score used on any one question is itself estimated from repeated
+generations.
+
+We study this distinction for convex weighting of \(K\) frozen language
+models, following the Best-of-Infinity setting of
+\citet{komiyama2026best}.  Each model induces an unknown distribution over the
+candidate answers to a question.  If those distributions were known, learning
+the weight vector would be an ordinary supervised aggregation problem.  In
+practice, the distribution of each model is replaced by vote frequencies from
+\(N\) generations, and the weights are selected from \(Q\) labeled questions.
+The resulting procedure has two independent sources of error: generalization
+from \(Q\) questions and Monte Carlo error from \(N\) generations per model and
+training question.
+
+The second source is not merely another smooth estimation term.  Correctness is
+determined by the sign of the smallest gold-versus-contender score gap.  A small
+perturbation is harmless on a well-separated training question but can reverse
+its empirical status near a tie.  Worse, raw empirical risk minimization
+searches over weights using those noisy signs, so it can select a weight vector
+that benefits from finite-\(N\) errors.  This is a structured instance of
+selection under noisy estimates \citep{smith2006theoc}.
+
+Our response is deliberately simple.  Instead of crediting every positive
+empirical margin, buffered ERM credits a training question only when its margin
+exceeds a uniform finite-generation radius
+\(\varepsilon_N(\delta)=\sqrt{2\log(8KAQ/\delta)/N}\), where \(A\) bounds the
+number of candidate answers.  Uniform concentration then places the noisy
+buffered loss between two clean losses: the ordinary zero-threshold loss and a
+clean loss with threshold \(2\varepsilon_N\).  This sandwich compares the
+learned weights with one fixed population comparator and avoids imposing a
+margin assumption at the random estimator.
+
+Under the one-sided condition
+\(\Pr\{0<M_q(w^\star)\le t\}\le C_m t^\beta\), the resulting excess-risk bound
+is
+\begin{equation}
+R(\widehat w_\varepsilon)-R(w^\star)
+\lesssim
+\sqrt{\frac{(K-1)\log(eAQ)+\log(1/\delta)}{Q}}
++
+C_m\left(\frac{\log(KAQ/\delta)}{N}\right)^{\beta/2}.
+\label{eq:intro-rate}
+\end{equation}
+The first term is standard generalization over questions.  The second is the
+mass of comparator-correct training questions that cannot be distinguished
+from ties at resolution \(N^{-1/2}\).  It can decay faster than \(N^{-1/2}\)
+because the target is a thresholded decision, not estimation of a smooth
+probability.  Equation~\ref{eq:intro-rate} concerns the clean population risk
+of the learned weights.  If deployment also uses finitely many fresh
+generations, prediction-time sign errors form an additional term; we state the
+available fixed-weight guarantee in Appendix~\ref{app:legacy-support} rather
+than hiding it inside the main theorem.
+
+The same margin exponent does \emph{not} automatically accelerate the
+\(Q\)-term.  We give a two-model construction with margins of magnitude one at
+each optimum, yet deciding which separated region of the simplex is better
+reduces to distinguishing two nearly fair coins.  Its minimax excess risk is
+of order \(Q^{-1/2}\).  This isolates the missing ingredient: a boundary
+condition controls local disagreement, while a fast learning rate also needs
+global identifiability.  We therefore state the faster result only under an
+absolute margin condition together with local risk growth and global
+separation.
+
+Our contributions are:
+\begin{enumerate}[leftmargin=*,itemsep=2pt,topsep=3pt]
+\item We formulate finite-generation LLM weighting as a two-sample-size
+problem and introduce a margin-buffered ERM with a direct mixed-integer linear
+implementation.
+\item We prove the robust bound in Eq.~(\ref{eq:intro-rate}) using only a
+one-sided margin condition at the best fixed weight.
+\item We prove that hard margins alone do not imply a fast \(Q\)-rate, then
+derive an optional localized rate under explicit geometric identifiability.
+\item We separate verified legacy diagnostics from direct evidence for the new
+estimator and specify the artifact-complete experiment required to close that
+gap.
+\end{enumerate}
+
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Test-time sampling and LLM ensembles.}
+Self-consistency made majority aggregation of sampled reasoning paths a common
+inference primitive \citep{wang2022selfconsistencyic}.  Repeated-sampling and
+test-time scaling studies characterize how coverage and accuracy change with
+additional inference compute \citep{brown2024largelm,schaeffer2025howdl,
+snell2025scalinglt,wu2024inferencesl}.  Multi-model systems instead exploit
+variation across frozen models, using ranking and fusion or layered agent
+aggregation \citep{jiang2023llmblenderel,wang2024mixtureofagentsel}.
+\citet{komiyama2026best} study the population, or best-of-infinity, limit of
+weighted test-time ensembling.  Our question is complementary: what guarantee
+survives when each population answer distribution is represented by only
+\(N\) generations and the weights are fitted on only \(Q\) questions?
+
+\paragraph{Aggregation of fixed predictors.}
+Linear opinion pools and forecast combinations have a long history
+\citep{stone1961opinionpool,bates1969combination,genest1986combining}.
+Stacking learns how to combine fixed predictors
+\citep{wolpert1992stacked,breiman1996stacked}, while weighted-majority methods
+study adaptive combinations of experts \citep{littlestone1994weighted}.  Our
+predictor is a linear opinion pool over answer distributions, followed by an
+\(\arg\max\).  The question-dependent candidate set changes the geometry, but
+on a fixed sample the relevant labelings are still induced by an arrangement
+of affine hyperplanes in the weight simplex.
+
+\paragraph{Margins, capacity, and fast rates.}
+Margin distributions are central to the analysis of voting classifiers
+\citep{schapire1997boostingtm,koltchinskii2001furthereo}.  VC growth bounds give
+the baseline uniform deviation over questions
+\citep{vapnik1971uniform,blumer1989learnability}, and Hoeffding concentration
+controls the empirical answer frequencies \citep{hoeffding1963probability}.
+Low-noise and margin assumptions can yield fast classification and aggregation
+rates when paired with suitable localization or curvature
+\citep{mammen1999smooth,tsybakov2004optimal,massart2006risk,
+bartlett2005local,koltchinskii2006local,audibert2005fastlr}.  Our negative
+example matters precisely here: boundary mass at an optimum does not rule out
+a nearly tied, well-separated competing optimum.  The optional fast theorem
+therefore derives its Bernstein condition from both absolute boundary control
+and explicit risk growth, rather than attributing the faster rate to the margin
+condition alone.
+
+\paragraph{Certificates and diagnostics.}
+PAC--Bayes analyses provide useful diagnostics for distributions over
+predictors \citep{mcallester1999pacbayes,dziugaite2017computing}, and specialized
+results connect Gibbs and majority-vote risks
+\citep{viallard2021selfboundingmv,wu2021chebyshevcantellipi}.  The retained
+PAC--Bayes numbers in this project are contextual diagnostics; they are not the
+certificate proved here.  Our main argument instead uses a deterministic
+buffered predictor, finite-sample margin concentration, and a clean
+indicator-sandwich comparison.

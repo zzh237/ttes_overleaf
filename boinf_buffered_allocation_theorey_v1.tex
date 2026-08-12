@@ -1,0 +1,1613 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{assumption}{Assumption}
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+\newtheorem{definition}{Definition}
+
+\newcommand{\Q}{\mathcal Q}
+\newcommand{\A}{\mathcal A}
+\newcommand{\D}{\mathcal D}
+\newcommand{\DeltaK}{\Delta_K}
+\newcommand{\E}{\mathbb E}
+\newcommand{\Pp}{\mathbb P}
+\newcommand{\one}{\mathbf 1}
+\newcommand{\what}{\widehat w}
+\newcommand{\wstar}{w^\star}
+\newcommand{\wfix}{w}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\norm}[1]{\left\lVert #1\right\rVert}
+\newcommand{\TV}{\mathrm{TV}}
+\newcommand{\KL}{\mathrm{KL}}
+\newcommand{\Ber}{\mathrm{Ber}}
+\newcommand{\class}{\mathcal P}
+\newcommand{\Mhat}{\widehat M}
+\newcommand{\nmax}{n_{\max}}
+\newcommand{\mmin}{m_{\min}}
+
+\title{Best-of-Infinity Ensembles:\\ Buffered Weight Learning and Adaptive Test-Time Allocation}
+\author{Union theory note from buffered ERM and allocation notes}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This union note combines two complementary theory notes for Best-of-Infinity style test-time ensembling.  Part~I studies the statistical problem of learning ensemble weights from $Q$ labeled benchmark questions when each model's answer distribution is estimated from $N$ generations; its main result is a buffered empirical-risk theorem with a two-sample-size rate.  Part~II studies the allocation problem after a weight vector is fixed: given a generation budget, how should test-time samples be spent across problems with different margins?  The two pieces should be read as a single paper spine: first learn or validate weights under double randomness, then allocate additional test-time compute according to margin difficulty.  The fixed-writeup system should preserve this hierarchy, avoid claiming unrun experiments, and treat the empirical program at the end as planned unless concrete result artifacts are supplied.
+\end{abstract}
+
+\section*{How this union note should drive the paper}
+\begin{enumerate}[label=(\roman*)]
+\item The main paper should present a single problem: Best-of-Infinity ensembling has two statistical bottlenecks, labeled questions $Q$ and per-question generations.  Weight learning and compute allocation are two stages of the same pipeline.
+\item Part~I is the core learning theorem: buffered ERM gives a robust $Q,N$ decomposition and explains why margin alone does not imply fast $Q$ rates.
+\item Part~II is the compute-allocation theorem: at a fixed weight vector, margins determine the price of resolving each problem, and adaptive allocation can improve the generation exponent relative to uniform allocation.
+\item Experiments should be written only when backed by the code/results inventory.  Otherwise, the empirical program should be described as a concrete plan over saved generations and bootstrap simulations.
+\end{enumerate}
+
+\part{Buffered Weight Learning under Double Randomness}
+\section{Purpose of this note}
+
+The goal is to isolate the statistical structure in Best-of-Infinity style LLM ensembling.  There are two independent sample sizes:
+\[
+\begin{aligned}
+Q &= \text{number of labeled benchmark questions},\\
+N &= \text{number of generations per model per question}.
+\end{aligned}
+\]
+The first controls how well we learn ensemble weights across problems.  The second controls how well we estimate each model's answer distribution on each problem.  This note gives a clean theorem for a margin-buffered empirical risk minimizer and then states an optional fast-rate theorem under an additional geometric identifiability condition.
+
+The main message is:
+\[
+\boxed{
+R(\what)-R(\wstar)
+\lesssim
+\sqrt{\frac{K\log(AQ)+\log(1/\delta)}{Q}}
++
+\left(\frac{\log(KAQ/\delta)}{N}\right)^{\beta/2}.}
+\]
+The $Q$-term is ordinary statistical generalization over labeled questions.  The $N$-term is the finite-generation floor.  The latter can be faster than $N^{-1/2}$ because the objective is a thresholded sign/correctness objective, not estimation of a smooth scalar parameter.
+
+\section{Setup and notation}
+
+Let $q\in\Q$ denote a problem, drawn from a distribution $\D$.  Each problem has a gold answer $a^\star(q)$ and a finite candidate answer set $\A(q)$ with
+\[
+|\A(q)|\le A.
+\]
+There are $K$ language models.  Model $i$ induces a distribution over final extracted answers,
+\[
+p_i(a\mid q),\qquad a\in\A(q),\quad i=1,\dots,K.
+\]
+For a fixed problem $q$, a fixed model $i$, and a generation budget $N$, we observe i.i.d. final answers
+\[
+Y_{i,1}(q),\dots,Y_{i,N}(q)\sim p_i(\cdot\mid q),
+\]
+and form the empirical answer distribution
+\[
+\widehat p_i(a\mid q)
+:=
+\frac1N\sum_{n=1}^N \one\{Y_{i,n}(q)=a\}.
+\]
+It is convenient to write the $K$-vector of model probabilities as
+\[
+p_\cdot(a\mid q)
+:=
+\big(p_1(a\mid q),\dots,p_K(a\mid q)\big)\in[0,1]^K,
+\]
+and similarly for $\widehat p_\cdot(a\mid q)$.
+
+An ensemble is a weight vector
+\[
+w=(w_1,\dots,w_K)\in\Delta_K
+:=
+\left\{w\in\mathbb R_+^K:\sum_{i=1}^K w_i=1\right\}.
+\]
+Its true score for answer $a$ on problem $q$ is
+\[
+s_q(a;w):=\langle w,p_\cdot(a\mid q)\rangle,
+\]
+and its empirical score is
+\[
+\widehat s_q(a;w):=\langle w,\widehat p_\cdot(a\mid q)\rangle.
+\]
+
+For every wrong answer $a\ne a^\star(q)$ define the answer-gap vector
+\[
+\Delta_{q,a}
+:=
+p_\cdot(a^\star(q)\mid q)-p_\cdot(a\mid q)\in[-1,1]^K,
+\]
+and its empirical version
+\[
+\widehat\Delta_{q,a}
+:=
+\widehat p_\cdot(a^\star(q)\mid q)-\widehat p_\cdot(a\mid q).
+\]
+The true margin of $w$ on $q$ is
+\[
+M_q(w)
+:=
+\min_{a\in\A(q),\,a\ne a^\star(q)}
+\langle w,\Delta_{q,a}\rangle.
+\]
+The empirical margin is
+\[
+\widehat M_q(w)
+:=
+\min_{a\in\A(q),\,a\ne a^\star(q)}
+\langle w,\widehat\Delta_{q,a}\rangle.
+\]
+Thus $M_q(w)>0$ means that the true weighted ensemble assigns higher probability to the gold answer than to every wrong answer.  We count ties as errors.
+
+The clean loss and clean risk are
+\[
+\ell_q(w):=\one\{M_q(w)\le 0\},
+\qquad
+R(w):=\Pp_{q\sim\D}\{M_q(w)\le 0\}.
+\]
+Let
+\[
+\wstar\in\arg\min_{w\in\Delta_K} R(w)
+\]
+be a clean-risk minimizer.
+
+The training data are
+\[
+\mathcal S_{Q,N}
+=
+\left\{\left(q_j,a^\star(q_j),\{Y_{j,i,n}:i\in[K],n\in[N]\}\right):j=1,\dots,Q\right\},
+\]
+where $q_j\overset{i.i.d.}{\sim}\D$.  On the training set, $\widehat M_{q_j}(w)$ is observable because the benchmark supplies $a^\star(q_j)$ and the generations supply $\widehat p_i(\cdot\mid q_j)$.
+
+\section{The margin-buffered estimator}
+
+Raw ERM minimizes
+\[
+\frac1Q\sum_{j=1}^Q \one\{\widehat M_{q_j}(w)\le 0\}.
+\]
+This can exploit finite-$N$ noise near the decision boundary.  We instead use a buffer:
+\[
+\widehat R_\eps(w)
+:=
+\frac1Q\sum_{j=1}^Q \one\{\widehat M_{q_j}(w)\le \eps\},
+\]
+and define
+\[
+\what_\eps\in\arg\min_{w\in\Delta_K}\widehat R_\eps(w).
+\]
+The buffer is chosen at the scale of the uniform finite-generation error on the training sample:
+\[
+\eps_N(\delta)
+:=
+\sqrt{\frac{2\log(4KAQ/\delta)}{N}}.
+\]
+This choice is not sacred; any constant multiple of the same order works.
+
+\section{A basic concentration event}
+
+\begin{lemma}[Uniform training-sample margin accuracy]
+\label{lem:margin-accuracy}
+Fix $\delta\in(0,1)$.  With probability at least $1-\delta/2$ over the generation randomness conditional on $q_1,\dots,q_Q$,
+\[
+\sup_{j\le Q}\sup_{w\in\Delta_K}
+\left|\widehat M_{q_j}(w)-M_{q_j}(w)\right|
+\le
+\eps_N(\delta).
+\]
+\end{lemma}
+
+\begin{proof}
+It suffices to control all answer frequencies.  By Hoeffding's inequality and a union bound,
+\[
+\Pp\left(
+\max_{j\le Q}\max_{i\le K}\max_{a\in\A(q_j)}
+\left|\widehat p_i(a\mid q_j)-p_i(a\mid q_j)\right|
+>
+\frac{\eps_N}{2}
+\right)
+\le
+2KAQ\exp\left(-\frac{N\eps_N^2}{2}\right)
+\le \frac\delta2.
+\]
+On this event, for every wrong answer $a$,
+\[
+\left|\langle w,\widehat\Delta_{q_j,a}-\Delta_{q_j,a}\rangle\right|
+\le
+\eps_N
+\]
+because $w\in\Delta_K$.  Taking minima over $a$ preserves the same Lipschitz bound.
+\end{proof}
+
+On the event in Lemma~\ref{lem:margin-accuracy}, for every training problem and every $w$,
+\[
+\one\{M_{q_j}(w)\le 0\}
+\le
+\one\{\widehat M_{q_j}(w)\le \eps_N\}
+\le
+\one\{M_{q_j}(w)\le 2\eps_N\}.
+\]
+This is the key sandwich.  The empirical noisy-buffered loss lies between the clean zero-buffer loss and the clean $2\eps_N$-buffer loss.
+
+\section{Capacity of the clean margin classes}
+
+For $t\ge0$ define the thresholded clean-margin class
+\[
+\mathcal F_t
+:=
+\left\{q\mapsto \one\{M_q(w)\le t\}:w\in\Delta_K\right\}.
+\]
+For fixed problems $q_1,
+\dots,q_Q$, each pair $(q_j,a)$ with $a\ne a^\star(q_j)$ contributes the affine hyperplane
+\[
+\langle w,\Delta_{q_j,a}\rangle=t
+\]
+in the $(K-1)$-dimensional simplex.  There are at most $Q(A-1)$ such hyperplanes.  Therefore the number of possible sign patterns over $q_1,\dots,q_Q$ is at most the number of cells in an arrangement of $Q(A-1)$ hyperplanes in dimension $K-1$:
+\[
+\Pi_{\mathcal F_t}(Q)
+\le
+\sum_{r=0}^{K-1}\binom{Q(A-1)}{r}
+\le
+\left(\frac{eQ(A-1)}{K-1}\right)^{K-1}
+\]
+when $Q(A-1)\ge K-1$.  Thus the effective combinatorial dimension is of order $K\log(AK)$, or equivalently the finite-sample deviation carries a factor $(K-1)\log(AQ)$, not $KA$.
+
+We will use the shorthand
+\[
+\mathfrak v_Q(\delta)
+:=
+C
+\sqrt{
+\frac{(K-1)\log(eAQ)+\log(1/\delta)}{Q}
+},
+\]
+where $C>0$ is a universal constant.  Standard VC symmetrization and the above growth bound imply that, with probability at least $1-\delta/2$ over $q_1,\dots,q_Q$,
+\[
+\sup_{w\in\Delta_K,\,t\in\{0,2\eps_N\}}
+\left|
+\frac1Q\sum_{j=1}^Q\one\{M_{q_j}(w)\le t\}
+-
+\Pp_q\{M_q(w)\le t\}
+\right|
+\le
+\mathfrak v_Q(\delta).
+\]
+
+\section{Main theorem: buffered ERM}
+
+\begin{assumption}[Comparator margin condition]
+\label{ass:comp-margin}
+There are constants $C_m>0$, $\beta>0$, and $t_0>0$ such that
+\[
+\Pp_{q\sim\D}\{0<M_q(\wstar)\le t\}
+\le
+C_m t^\beta,
+\qquad 0<t\le t_0.
+\]
+\end{assumption}
+
+This is a one-sided condition: it only controls correctly solved problems at $\wstar$ whose positive margin is small.  That is enough for the buffered theorem because the proof compares the learned rule to $\wstar$ and only pays for the extra $2\eps_N$ band around correct decisions of $\wstar$.
+
+\begin{theorem}[Buffered ERM, slow $Q$-rate and fast finite-generation floor]
+\label{thm:buffered-main}
+Assume Assumption~\ref{ass:comp-margin}.  Let
+\[
+\eps_N=\sqrt{\frac{2\log(8KAQ/\delta)}{N}}
+\]
+and suppose $2\eps_N\le t_0$.  Let
+\[
+\what_\eps\in\arg\min_{w\in\Delta_K}
+\frac1Q\sum_{j=1}^Q\one\{\widehat M_{q_j}(w)\le\eps_N\}.
+\]
+Then with probability at least $1-\delta$ over both the $Q$ problem draws and the $N$ generations per model per problem,
+\[
+R(\what_\eps)-R(\wstar)
+\le
+2\mathfrak v_Q(\delta)
++
+C_m(2\eps_N)^\beta.
+\]
+Equivalently, up to universal constants,
+\[
+\boxed{
+R(\what_\eps)-R(\wstar)
+\lesssim
+\sqrt{\frac{(K-1)\log(eAQ)+\log(1/\delta)}{Q}}
++
+C_m
+\left(\frac{\log(KAQ/\delta)}{N}\right)^{\beta/2}.
+}
+\]
+\end{theorem}
+
+\begin{proof}
+Let
+\[
+\widetilde R_t(w):=\frac1Q\sum_{j=1}^Q\one\{M_{q_j}(w)\le t\},
+\qquad
+R_t(w):=\Pp_q\{M_q(w)\le t\}.
+\]
+On the high-probability margin-accuracy event,
+\[
+\widetilde R_0(w)
+\le
+\widehat R_{\eps_N}(w)
+\le
+\widetilde R_{2\eps_N}(w)
+\qquad
+\text{for all }w\in\Delta_K.
+\]
+On the high-probability VC event,
+\[
+R_0(w)\le \widetilde R_0(w)+\mathfrak v_Q(\delta),
+\qquad
+\widetilde R_{2\eps_N}(w)\le R_{2\eps_N}(w)+\mathfrak v_Q(\delta)
+\]
+for all $w$.  Therefore
+\begin{align*}
+R(\what_\eps)
+&=R_0(\what_\eps)\\
+&\le \widetilde R_0(\what_\eps)+\mathfrak v_Q(\delta)\\
+&\le \widehat R_{\eps_N}(\what_\eps)+\mathfrak v_Q(\delta)\\
+&\le \widehat R_{\eps_N}(\wstar)+\mathfrak v_Q(\delta)\\
+&\le \widetilde R_{2\eps_N}(\wstar)+\mathfrak v_Q(\delta)\\
+&\le R_{2\eps_N}(\wstar)+2\mathfrak v_Q(\delta).
+\end{align*}
+Finally,
+\[
+R_{2\eps_N}(\wstar)-R_0(\wstar)
+=
+\Pp_q\{0<M_q(\wstar)\le 2\eps_N\}
+\le
+C_m(2\eps_N)^\beta
+\]
+by Assumption~\ref{ass:comp-margin}.  Subtract $R(\wstar)=R_0(\wstar)$.
+\end{proof}
+
+\begin{remark}[Why the buffer matters]
+The theorem avoids any margin assumption at the random, data-dependent $\what_\eps$.  The buffer guarantees that if a training problem appears safely solved empirically, then it is also solved by the true margin, up to the $2\eps_N$ band.  Hence the only finite-$N$ mass we pay for is the $2\eps_N$ band around the fixed comparator $\wstar$.
+\end{remark}
+
+\section{Optional fast $Q$-rates from geometric identifiability}
+
+The margin condition alone controls the finite-generation floor.  It does not, by itself, imply a fast $Q$-rate.  A fast $Q$-rate requires an additional condition saying that moving away from $\wstar$ actually increases risk.  This is an identifiability or growth condition.
+
+Define the disagreement probability
+\[
+D(w,\wstar)
+:=
+\Pp_q\{\ell_q(w)\ne \ell_q(\wstar)\}.
+\]
+A common route to fast rates is a Bernstein condition
+\[
+D(w,\wstar)
+\le
+B\{R(w)-R(\wstar)\}^{\alpha},
+\qquad 0<\alpha\le 1.
+\]
+Rather than assume this directly, we state primitive geometric conditions that imply it.
+
+\begin{assumption}[Absolute comparator margin]
+\label{ass:absolute-margin}
+There exist $C_m>0$, $\beta>0$, and $t_0>0$ such that
+\[
+\Pp_q\{|M_q(\wstar)|\le t\}
+\le
+C_m t^\beta,
+\qquad 0<t\le t_0.
+\]
+\end{assumption}
+
+\begin{assumption}[Local risk growth and global separation]
+\label{ass:growth}
+There exist constants $c_g>0$, $\gamma>0$, $r_0>0$, and $c_{\rm sep}>0$ such that
+\[
+R(w)-R(\wstar)
+\ge
+c_g\norm{w-\wstar}_1^\gamma
+\qquad
+\text{whenever }\norm{w-\wstar}_1\le r_0,
+\]
+and
+\[
+R(w)-R(\wstar)
+\ge c_{\rm sep}
+\qquad
+\text{whenever }\norm{w-\wstar}_1>r_0.
+\]
+\end{assumption}
+
+\begin{proposition}[Geometry implies Bernstein]
+\label{prop:geom-bernstein}
+Under Assumptions~\ref{ass:absolute-margin} and~\ref{ass:growth}, there is a constant $B<\infty$ such that
+\[
+D(w,\wstar)
+\le
+B\{R(w)-R(\wstar)\}^{\alpha}
+\qquad
+\text{for all }w\in\Delta_K,
+\]
+where
+\[
+\alpha:=\min\left\{1,\frac{\beta}{\gamma}\right\}.
+\]
+\end{proposition}
+
+\begin{proof}
+First note that $M_q$ is one-Lipschitz in $\ell_1$:
+\[
+|M_q(w)-M_q(w')|
+\le
+\norm{w-w'}_1.
+\]
+Indeed, each $\Delta_{q,a}$ has $\ell_\infty$ norm at most one, and taking the minimum over $a$ preserves the Lipschitz constant.  If $\ell_q(w)\ne\ell_q(\wstar)$, then the signs of $M_q(w)$ and $M_q(\wstar)$ differ, so
+\[
+|M_q(\wstar)|
+\le
+|M_q(w)-M_q(\wstar)|
+\le
+\norm{w-\wstar}_1.
+\]
+Thus, by Assumption~\ref{ass:absolute-margin},
+\[
+D(w,\wstar)
+\le
+C_m\norm{w-\wstar}_1^\beta
+\]
+whenever $\norm{w-\wstar}_1\le t_0$.  Locally, Assumption~\ref{ass:growth} gives
+\[
+\norm{w-\wstar}_1^\beta
+\le
+c_g^{-\beta/\gamma}
+\{R(w)-R(\wstar)\}^{\beta/\gamma}.
+\]
+If $\beta/\gamma>1$, weaken the exponent to one, since $R(w)-R(\wstar)\le 1$ after adjusting constants.  Away from the local ball, $D(w,\wstar)\le1\le c_{\rm sep}^{-\alpha}\{R(w)-R(\wstar)\}^{\alpha}$.  Enlarging constants proves the claim.
+\end{proof}
+
+We will use the following standard localized-VC lemma.  It is included as a black-box empirical-process step; the substantive modeling content for this paper is Proposition~\ref{prop:geom-bernstein}, which gives primitive geometric conditions under which the Bernstein premise of the lemma holds.
+
+\begin{lemma}[Localized VC bound for approximate ERM]
+\label{lem:localized-vc}
+Let $\mathcal L=\{\ell_w:w\in\Delta_K\}$ be a class of $\{0,1\}$-valued losses with minimizer $\wstar$.  Suppose its growth function on $Q$ points is bounded by
+\[
+\Pi_{\mathcal L}(Q)\le \exp(V_Q),
+\qquad
+V_Q\asymp (K-1)\log(eAQ),
+\]
+and suppose the Bernstein condition holds:
+\[
+\Pp_q\{\ell_q(w)\ne\ell_q(\wstar)\}
+\le
+B\{R(w)-R(\wstar)\}^{\alpha},
+\qquad 0<\alpha\le 1.
+\]
+If a data-dependent $\widetilde w$ satisfies
+\[
+\frac1Q\sum_{j=1}^Q\ell_{q_j}(\widetilde w)
+\le
+\frac1Q\sum_{j=1}^Q\ell_{q_j}(\wstar)+a,
+\]
+then with probability at least $1-\delta$,
+\[
+R(\widetilde w)-R(\wstar)
+\le
+C
+\left[
+ a
+ +
+\left(\frac{V_Q+\log(1/\delta)}{Q}\right)^{1/(2-\alpha)}
++
+\frac{V_Q+\log(1/\delta)}{Q}
+\right],
+\]
+where $C$ depends only on $B$ and $\alpha$.
+\end{lemma}
+
+\begin{proof}[Proof idea]
+This is the usual peeling proof for bounded excess losses under a Bernstein condition.  For the excess class $g_w=\ell_w-\ell_{\wstar}$, the variance satisfies $\E g_w^2\le B(\E g_w)^\alpha$.  On each shell $r<\E g_w\le2r$, Bernstein's inequality and the VC growth bound imply a uniform deviation of order
+\[
+\sqrt{\frac{r^\alpha(V_Q+\log(1/\delta))}{Q}}
++
+\frac{V_Q+\log(1/\delta)}{Q}.
+\]
+Solving the fixed point
+\[
+r\asymp
+\sqrt{\frac{r^\alpha(V_Q+\log(1/\delta))}{Q}}
+\]
+gives $r\asymp((V_Q+\log(1/\delta))/Q)^{1/(2-\alpha)}$.  The approximate-ERM slack $a$ enters additively.  This is the standard Massart/Tsybakov localized-rate argument, specialized to the finite-growth class above.
+\end{proof}
+
+We now state the fast-rate version.
+
+\begin{theorem}[Buffered ERM with optional fast $Q$-rate]
+\label{thm:fast}
+Assume Assumptions~\ref{ass:absolute-margin} and~\ref{ass:growth}.  Let $\alpha=\min\{1,\beta/\gamma\}$ and let $\what_\eps$ be the buffered ERM from Theorem~\ref{thm:buffered-main}.  Then, with probability at least $1-\delta$,
+\[
+R(\what_\eps)-R(\wstar)
+\le
+C
+\left(
+\frac{(K-1)\log(eAQ)+\log(1/\delta)}{Q}
+\right)^{\frac{1}{2-\alpha}}
++
+C'
+\left(\frac{\log(KAQ/\delta)}{N}\right)^{\beta/2},
+\]
+where $C,C'$ depend on the margin and growth constants but not on $Q,N,K,A$.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+On the margin-accuracy event,
+\[
+\frac1Q\sum_{j=1}^Q\ell_{q_j}(\what_\eps)
+\le
+\frac1Q\sum_{j=1}^Q\one\{\widehat M_{q_j}(\what_\eps)\le\eps_N\}
+\le
+\frac1Q\sum_{j=1}^Q\one\{\widehat M_{q_j}(\wstar)\le\eps_N\}
+\le
+\frac1Q\sum_{j=1}^Q\one\{M_{q_j}(\wstar)\le2\eps_N\}.
+\]
+Therefore $\what_\eps$ is an approximate ERM for the clean loss, with empirical excess bounded by
+\[
+\frac1Q\sum_{j=1}^Q\one\{0<M_{q_j}(\wstar)\le2\eps_N\}.
+\]
+By the margin condition, this empirical band mass has expectation at most $C_m(2\eps_N)^\beta$ and, by Bernstein's inequality for a fixed Bernoulli variable, is at most a constant multiple of $(2\eps_N)^\beta+\log(1/\delta)/Q$ with high probability.  Proposition~\ref{prop:geom-bernstein} gives the Bernstein condition with exponent $\alpha$.  Applying Lemma~\ref{lem:localized-vc} yields the displayed bound, absorbing the $\log(1/\delta)/Q$ term into the localized complexity term.
+\end{proof}
+
+\begin{remark}[Where the exponent comes from]
+The exponent is not inherently $\beta/(\beta+1)$.  In this geometry it is
+\[
+\alpha=\min\{1,\beta/\gamma\},
+\]
+where $\beta$ measures the thickness of the decision boundary and $\gamma$ measures how risk grows as one moves away from $\wstar$.  The often-appearing value $\alpha=\beta/(\beta+1)$ corresponds to the special local-growth regime $\gamma=\beta+1$.
+\end{remark}
+
+\section{Why margin alone cannot give a fast $Q$-rate}
+
+The following example shows why the fast $Q$-rate cannot follow from the geometric margin condition alone, even with a hard margin and no finite-generation noise.
+
+\begin{proposition}[Hard margin but only root-$Q$ distinguishability]
+\label{prop:counterexample}
+There is a family of two-model, two-answer problems with $N=\infty$ and hard margin at the optimum such that no procedure can uniformly guarantee excess risk $o(Q^{-1/2})$ from $Q$ labeled questions.
+\end{proposition}
+
+\begin{proof}
+Take $K=2$ and two answers, the gold answer $a^\star$ and a wrong answer $b$.  Write $w=(t,1-t)$.  There are two problem types.
+
+For type $+$, model 1 is always correct and model 2 is always wrong:
+\[
+p_1(a^\star\mid q)=1,
+\qquad
+p_2(a^\star\mid q)=0.
+\]
+Then
+\[
+\Delta_q=(1,-1),
+\qquad
+M_q(w)=2t-1.
+\]
+For type $-$, model 1 is always wrong and model 2 is always correct:
+\[
+p_1(a^\star\mid q)=0,
+\qquad
+p_2(a^\star\mid q)=1,
+\]
+so
+\[
+\Delta_q=(-1,1),
+\qquad
+M_q(w)=1-2t.
+\]
+Thus weights with $t>1/2$ solve exactly the type $+$ problems, while weights with $t<1/2$ solve exactly the type $-$ problems.
+
+Now consider two distributions over problem types:
+\[
+\D_+:
+\Pp(q=+)=\frac12+\frac\eps2,
+\qquad
+\D_-:
+\Pp(q=+)=\frac12-\frac\eps2.
+\]
+Under $\D_+$, the optimal side is $t>1/2$, with risk $1/2-\eps/2$.  Choosing the wrong side has risk $1/2+\eps/2$, so the excess risk is $\eps$.  Under $\D_-$, the optimal side is reversed.
+
+At an optimum, say $w^\star=(1,0)$ under $\D_+$, the margins satisfy
+\[
+|M_q(w^\star)|=1
+\]
+for both problem types.  Hence the margin is hard: there is no near-boundary mass at all.
+
+However, distinguishing $\D_+$ from $\D_-$ using $Q$ training questions is just distinguishing two coins with biases $1/2\pm\eps/2$.  If $\eps=c/\sqrt Q$ for sufficiently small constant $c$, the total variation distance between the $Q$-sample laws remains bounded away from one.  Therefore any procedure chooses the wrong side with constant probability under at least one of $\D_+$ or $\D_-$.  On that event its excess risk is $\eps\asymp Q^{-1/2}$.
+
+Thus even a hard margin does not imply a faster-than-root-$Q$ learning rate.  The missing ingredient is global identifiability: the two separated regions of the simplex have nearly equal risks.
+\end{proof}
+
+\section{How to interpret the growth exponent $\gamma$}
+
+The growth condition is not a technical decoration; it describes how the geometry of the benchmark changes when we move the ensemble weights.  Let $r=\norm{w-\wstar}_1$.  Because $M_q$ is Lipschitz in $w$, only problems with
+\[
+|M_q(\wstar)|\lesssim r
+\]
+can change their solved/unsolved status.  Under the margin condition, the mass of such problems is at most order $r^\beta$.  This is the disagreement scale:
+\[
+D(w,\wstar)\lesssim r^\beta.
+\]
+But the excess risk is not the disagreement mass; it is the net imbalance between newly lost and newly gained questions.
+
+Along a one-dimensional path $w_r$ away from $\wstar$, write
+\[
+B_+(r):=\Pp\{\text{question is solved by }\wstar\text{ but failed by }w_r\},
+\]
+\[
+B_-(r):=\Pp\{\text{question is failed by }\wstar\text{ but solved by }w_r\}.
+\]
+Then
+\[
+D(w_r,\wstar)=B_+(r)+B_-(r),
+\qquad
+R(w_r)-R(\wstar)=B_+(r)-B_-(r).
+\]
+The margin exponent controls the sum; the growth exponent controls the difference.
+
+\paragraph{Case A: all crossings hurt.}
+If moving away from $\wstar$ mostly turns correct questions into errors and does not rescue comparable failed questions, then
+\[
+B_+(r)\asymp r^\beta,
+\qquad
+B_-(r)=o(r^\beta).
+\]
+Hence
+\[
+R(w_r)-R(\wstar)\asymp r^\beta,
+\]
+so $\gamma=\beta$, $\alpha=1$, and the fast $Q$-term is essentially $Q^{-1}$ up to logarithms.  A simple model is a one-sided boundary: all questions near the boundary are correctly solved at $\wstar$ and become wrong when the weight is perturbed.
+
+\paragraph{Case B: first-order cancellation.}
+Suppose the total crossing mass is still order $r^\beta$, but losses and gains nearly cancel:
+\[
+B_+(r)=c r^\beta+c' r^{\beta+1}+o(r^{\beta+1}),
+\]
+\[
+B_-(r)=c r^\beta-c' r^{\beta+1}+o(r^{\beta+1}).
+\]
+Then
+\[
+D(w_r,\wstar)\asymp r^\beta,
+\qquad
+R(w_r)-R(\wstar)\asymp r^{\beta+1}.
+\]
+Thus $\gamma=\beta+1$, $\alpha=\beta/(\beta+1)$, and the fast $Q$-term becomes
+\[
+Q^{-(\beta+1)/(\beta+2)}
+\]
+up to logarithms.  This is the regime in which the previously suggested exponent naturally appears.  It is not a consequence of the margin condition alone; it is a consequence of margin plus first-order gain/loss cancellation.
+
+\paragraph{Case C: higher-order cancellation.}
+If the gain/loss imbalance vanishes to higher order,
+\[
+B_+(r)-B_-(r)\asymp r^{\beta+s},
+\qquad s>1,
+\]
+then $\gamma=\beta+s$ and
+\[
+\alpha=\frac{\beta}{\beta+s}.
+\]
+The fast rate becomes slower.  This is a flatter risk landscape: many questions change status near the boundary, but the net risk difference is small.
+
+\paragraph{Case D: separated near-tie between two regions.}
+The counterexample in Proposition~\ref{prop:counterexample} is the extreme nonlocal case.  Two separated regions of the simplex have hard margins internally, but their risks differ by only $\eps$.  The benchmark gives no local boundary signal that decides which region is better; one must estimate a global coin bias from $Q$ problems.  This yields the root-$Q$ obstruction.
+
+\section{Recommended theorem hierarchy for the paper}
+
+The cleanest presentation is:
+
+\begin{enumerate}[label=(\roman*)]
+\item State the double-randomness setup and the definitions of $p_i$, $\widehat p_i$, $\Delta_{q,a}$, $M_q$, and $\widehat M_q$.
+
+\item Make the buffered ERM theorem, Theorem~\ref{thm:buffered-main}, the main result.  It requires only a comparator margin condition and gives the robust two-term rate
+\[
+\sqrt{\frac{K\log(AQ)}{Q}}
++
+\left(\frac{\log(KAQ)}{N}\right)^{\beta/2}.
+\]
+
+\item Include Proposition~\ref{prop:counterexample} immediately after the main theorem to explain why the margin condition alone cannot produce a fast $Q$-rate.
+
+\item Present the optional fast-rate theorem only after introducing geometric identifiability: absolute margin plus risk growth.  Emphasize that the exponent is
+\[
+\alpha=\min\{1,\beta/\gamma\},
+\]
+not automatically $\beta/(\beta+1)$.
+\end{enumerate}
+
+This makes the paper honest: the genuinely new LLM-specific contribution is the $Q,N$ decomposition and the finite-generation margin floor.  Fast $Q$-rates are available, but only when the risk landscape has additional identifiable geometry.
+
+\part{Adaptive Test-Time Allocation at a Fixed Weight Vector}
+\section{Introduction}
+
+\subsection{Setting and motivation}
+
+A test-time ensemble aggregates repeated generations from $K$ language
+models: on problem $q$, model $i$ induces an answer distribution
+$p_i(\cdot\mid q)$, and a weight vector $\wfix\in\DeltaK$ scores each
+candidate answer $a$ by $\langle \wfix,p_\cdot(a\mid q)\rangle$.  The
+companion note on buffered ERM studies how to \emph{learn} $\wfix$ from $Q$
+labeled questions when each answer distribution is estimated from $N$
+generations, and establishes the two-term rate
+\[
+R(\what)-R(\wstar)
+\;\lesssim\;
+\sqrt{\frac{K\log(AQ)}{Q}}
+\;+\;
+\Big(\frac{\log(KAQ)}{N}\Big)^{\beta/2}.
+\]
+The two terms have very different practical status.  The $Q$-term is
+information-theoretic and binds hard on real benchmarks ($Q=30$ for AIME):
+no method can learn rich weights from thirty questions.  But the $N$-term is
+\emph{compute}: it is the only term the practitioner controls at inference
+time, and nothing forces the same $N$ on every problem.  This paper makes
+the generation budget the object of study.
+
+Fix the weight vector $\wfix$ (learned, uniform, or best-single --- and note
+$K=1$ covers plurality voting / self-consistency for a single model).
+The population margin
+\[
+M_q(\wfix)
+=\min_{a\ne a^\star(q)}\big\langle \wfix,\;p_\cdot(a^\star(q)\mid q)-p_\cdot(a\mid q)\big\rangle
+\]
+measures how safely the infinite-compute ensemble decides problem $q$: it is
+the signal-to-noise ratio of the problem.  Estimating the plurality answer
+of a problem with margin $m$ from finite generations is a testing problem
+whose difficulty scales as $m^{-2}$; a margin condition with exponent
+$\beta$ (Assumption~\ref{ass:margin}) says small-margin problems are rare at
+a polynomial rate.  The questions we answer:
+
+\begin{enumerate}
+\item If every problem receives the same budget $b$, what excess risk over
+$R(\wfix)$ is incurred?  (\emph{Uniform allocation} --- Theorem~\ref{thm:uniform};
+this is the finite-generation floor restated in budget language.)
+\item If budgets may depend on the problem, how much better can one do?
+(\emph{Oracle allocation} --- Theorem~\ref{thm:oracle}.)
+\item Can the oracle be matched without knowing the margins?
+(\emph{Sequential allocation} --- Theorem~\ref{thm:sequential}.)
+\item Are these rates optimal?  (\emph{Minimax lower bounds} ---
+Theorems~\ref{thm:lower-uniform} and~\ref{thm:lower-adaptive}.)
+\end{enumerate}
+
+\subsection{Results}
+
+Write $b$ for the expected number of \emph{rounds} per problem (one round =
+one generation from each model; the factor $K$ affects only constants).
+Under the margin condition with exponent $\beta\in(0,2)$:
+\[
+\underbrace{\mathcal E_{\mathrm{unif}}(b)\;\asymp\;b^{-\beta/2}}_{\text{uniform}}
+\qquad\text{versus}\qquad
+\underbrace{c\,b^{-\frac{\beta}{2-\beta}}
+\;\le\;\mathcal E_{\mathrm{adapt}}(b)\;\le\;
+C\Big(\frac{\log b}{b}\Big)^{\frac{\beta}{2-\beta}}}_{\text{adaptive}} .
+\]
+The adaptive exponent $\beta/(2-\beta)$ strictly exceeds the uniform
+$\beta/2$ for every $\beta\in(0,2)$; at $\beta=1$ the comparison is $b^{-1}$
+versus $b^{-1/2}$.  The upper bound is achieved by a practical rule: sample
+in doubling epochs and stop when the empirical margin exceeds an
+anytime-valid confidence radius (``stop when the leader's lead is
+significant''), with a budget-determined cap.  The lower bounds are minimax
+over the class of populations satisfying the margin condition, so the
+uniform-versus-adaptive gap is a property of the problem, not of our proofs.
+At $\beta=2$ the problem undergoes a phase transition, which
+Section~\ref{sec:phase} characterizes completely: for $\beta>2$ the
+resolution cost $\mu_2=\E[M^{-2}]$ is finite and adaptive allocation
+achieves excess $e^{-\Theta(b)}$ (with a matching exponential lower bound),
+while uniform allocation remains polynomial at $\Theta(b^{-\beta/2})$ ---
+a polynomial-versus-exponential separation; at $\beta=2$ itself both bounds
+are stretched exponentials $e^{-\Theta(\sqrt b)}$, matched in form via a
+scale-invariant hard population.  Section~\ref{sec:phase} also resolves how
+the theory reads on finite benchmarks, which are hard-margin populations
+belonging to the class for every $\beta$ simultaneously.
+
+The mechanism is elementary and worth stating once: at budget $b$, uniform
+allocation is bottlenecked by problems at margin $m\asymp b^{-1/2}$, whose
+mass is $\asymp b^{-\beta/2}$; it wastes almost all of its budget driving
+already-negligible errors on large-margin problems further down.  An
+adaptive allocator spends $\asymp m^{-2}$ on each problem at margin $m$ and
+can therefore afford to push its resolution cutoff down to
+$m_0\asymp b^{-1/(2-\beta)}\ll b^{-1/2}$, paying total mass
+$m_0^\beta=b^{-\beta/(2-\beta)}$.
+
+Two further findings.  First, a structural asymmetry between knowing and
+learning (Section~\ref{sec:twosided}): the oracle needs only the
+\emph{one-sided} margin condition $\Pp\{0<M_q\le t\}\lesssim t^\beta$ ---
+it skips hopeless problems for free --- while any sequential learner must
+spend budget to discover that a problem with margin just below zero is
+hopeless, and correspondingly requires the \emph{two-sided} condition
+$\Pp\{|M_q|\le t\}\lesssim t^\beta$.  With an unconstrained negative band the
+adaptive rate provably degrades back to the uniform rate.  Second, the
+$K=1$ case is a rate theory for \emph{adaptive self-consistency}
+(Remark~\ref{rem:selfconsistency}): sample a single model until its leading
+answer's lead over the runner-up is statistically significant.  Adaptive
+stopping rules of this type are used heuristically (e.g.\ the Bayesian
+stopping of the Best-of-$\infty$ paper); our results identify the rates they
+achieve and the exponent $\beta$ that governs them.
+
+\subsection{Relation to prior work}
+
+The allocation problem connects three literatures.  (1) \emph{Test-time
+scaling}: compute-optimal scaling studies (Snell et al.) demonstrate
+empirically that adaptive compute beats uniform compute; we provide a
+minimax theory with explicit exponents for the plurality-vote/ensemble
+setting.  (2) \emph{Thresholding bandits and best-arm identification}
+(Locatelli, Gutzeit and Carpentier; Jamieson et al.'s lil'UCB; Karnin et
+al.): our sequential rule is a per-problem sign test of the margin, and our
+lower-bound technique (divergence decomposition with adaptive stopping) is
+from this toolbox; the objective differs --- population excess risk against
+an infinite-compute reference, with the margin distribution playing the
+role of the arm-gap distribution --- so the rates and their $\beta$-dependence
+are new.  (3) \emph{Active learning under Tsybakov noise} (Castro and
+Nowak; Hanneke): the phenomenon ``adaptivity improves the exponent under a
+margin condition'' is the same in spirit; the sampling channel here
+(multinomial generations against a plurality threshold) and the budget
+accounting are specific to test-time ensembling.
+
+\section{Setup}
+\label{sec:setup}
+
+Notation follows the companion note.  Problems $q\sim\D$; gold answer
+$a^\star(q)$; candidate set $\A(q)$, $|\A(q)|\le A$; models $i=1,\dots,K$
+with answer distributions $p_i(\cdot\mid q)$; weights $\wfix\in\DeltaK$
+fixed throughout; margins $M_q=M_q(\wfix)\in[-1,1]$ as above; clean risk
+$R(\wfix)=\Pp_q\{M_q\le0\}$ (ties are errors).
+
+\paragraph{Rounds and procedures.}
+One \emph{round} on problem $q$ draws one generation from each model,
+$(Y_{1,r},\dots,Y_{K,r})$, $Y_{i,r}\sim p_i(\cdot\mid q)$, independent
+across models and rounds.  After $n$ rounds, $\widehat p^{(n)}_i(a\mid q)$
+denotes the empirical answer frequencies,
+$\Mhat^{(n)}_q=\min_{a\ne a^\star(q)}\langle\wfix,\widehat
+p^{(n)}_\cdot(a^\star(q)\mid q)-\widehat p^{(n)}_\cdot(a\mid q)\rangle$
+the empirical margin, and the \emph{plurality output}
+$\widehat a^{(n)}=\arg\max_a\langle \wfix,\widehat p^{(n)}_\cdot(a\mid
+q)\rangle$ (ties are errors).  A \emph{procedure} decides, after each round
+and measurably in the observed generations (plus outside randomization),
+whether to request another round, and on stopping outputs an answer; it
+observes answer strings only --- neither $a^\star(q)$ nor $M_q$.  A problem
+allocated zero rounds outputs an abstention symbol, always an error.  The
+spend on $q$ is $n_q$; the budget constraint is
+$\E[n_q]\le b$, jointly over $q\sim\D$, the generations, and the
+procedure's randomization.  (Strict total budgets over a finite problem set
+are recovered by Bernstein's inequality; Remark~\ref{rem:total-budget}.)
+The \emph{procedure risk} and \emph{excess} are
+\[
+R_\pi=\Pp\{\text{output}\ne a^\star(q)\},
+\qquad
+\mathcal E_\pi=R_\pi-R(\wfix).
+\]
+
+\paragraph{One-sidedness of the excess.}
+On $\{M_q\le0\}$ the infinite-compute ensemble is already wrong, so finite
+sampling can only help there:
+\begin{equation}
+\label{eq:onesided}
+\mathcal E_\pi
+\;\le\;
+\E\big[\one\{M_q>0\}\;\Pp(\text{output}\ne a^\star\mid q)\big].
+\end{equation}
+Upper bounds therefore pay only on the positive side.
+
+\begin{assumption}[One-sided margin condition at $\wfix$]
+\label{ass:margin}
+There exist $C_m>0$, $\beta>0$, $t_0\in(0,1]$ with
+$\Pp_q\{0<M_q(\wfix)\le t\}\le C_m t^\beta$ for all $0<t\le t_0$.
+\end{assumption}
+
+\begin{assumption}[Two-sided margin condition at $\wfix$]
+\label{ass:two-sided}
+There exist $C_m>0$, $\beta>0$, $t_0\in(0,1]$ with
+$\Pp_q\{|M_q(\wfix)|\le t\}\le C_m t^\beta$ for all $0<t\le t_0$.
+\end{assumption}
+
+Assumption~\ref{ass:two-sided} implies Assumption~\ref{ass:margin} and
+additionally forbids an atom at $M_q=0$.  The oracle results use only
+Assumption~\ref{ass:margin}; the sequential learner uses
+Assumption~\ref{ass:two-sided}, and Section~\ref{sec:twosided} shows this is
+not an artifact.  On finite benchmarks the comparator should be chosen with
+healthy margins --- among the risk minimizers, tie-breaking can manufacture
+spurious atoms at zero (empirically: a sign-MILP parks problems at
+$M\approx10^{-4}$, its numerical buffer), and a max-margin selection removes
+them.
+
+\section{The cost of a margin}
+
+\begin{lemma}[Per-problem sign error]
+\label{lem:perproblem}
+Fix $q$ with $m:=M_q(\wfix)>0$.  After $n\ge1$ rounds,
+$\Pp\{\widehat a^{(n)}\ne a^\star(q)\}\le(A-1)\,e^{-nm^2/2}$.
+\end{lemma}
+
+\begin{proof}
+For a wrong answer $a$, the per-round score differences
+$X^{(a)}_r=\sum_i\wfix_i(\one\{Y_{i,r}=a^\star(q)\}-\one\{Y_{i,r}=a\})\in[-1,1]$
+are i.i.d.\ with mean $\langle\wfix,\Delta_{q,a}\rangle\ge m$, where
+$\Delta_{q,a}=p_\cdot(a^\star(q)\mid q)-p_\cdot(a\mid q)$, and their average
+is the empirical gold-versus-$a$ gap.  The output is wrong only if some
+wrong answer's empirical gap is $\le0$, a deviation of at least $m$ below
+the mean; Hoeffding (range $2$) bounds each such event by $e^{-nm^2/2}$, and
+a union bound over the $\le A-1$ wrong answers finishes.
+\end{proof}
+
+Thus driving the error on a margin-$m$ problem below $\delta$ costs
+$n(m,\delta)=\lceil(2/m^2)\log((A-1)/\delta)\rceil$ rounds.  This $m^{-2}$
+law is the engine of all upper bounds, and Section~\ref{sec:lower} shows it
+is information-theoretically exact.  Empirically it is directly visible in
+real LLM generations: in our AIME2024 resampling study, problems with
+$|M|\ge0.15$ are decided by $N'\approx10$ generations while near-tie
+problems keep flipping at $N'=100$, exactly the $e^{-cNM^2}$ stratification.
+
+\section{Uniform allocation}
+
+\begin{theorem}[Uniform allocation]
+\label{thm:uniform}
+Under Assumption~\ref{ass:margin}, the rule that spends $n_q\equiv b\ge1$
+rounds on every problem and outputs the plurality answer satisfies
+\[
+\mathcal E_{\mathrm{unif}}(b)
+\ \le\
+(A-1)\Big[
+C_m\,2^{\beta/2}\,\Gamma\big(\tfrac\beta2+1\big)\,b^{-\beta/2}
++e^{-t_0^2b/2}
+\Big].
+\]
+\end{theorem}
+
+\begin{proof}
+By \eqref{eq:onesided} and Lemma~\ref{lem:perproblem},
+$\mathcal E_{\mathrm{unif}}\le(A-1)\,\E[\one\{M_q>0\}e^{-bM_q^2/2}]$.  The
+layer-cake identity $e^{-bm^2/2}=\int_m^\infty bt\,e^{-bt^2/2}\,dt$ and
+Fubini give
+\[
+\E\big[\one\{M_q>0\}e^{-bM_q^2/2}\big]
+=\int_0^\infty b\,t\,e^{-bt^2/2}\,\Pp\{0<M_q\le t\}\,dt .
+\]
+On $(t_0,\infty)$ bound the probability by $1$, contributing
+$e^{-bt_0^2/2}$.  On $(0,t_0]$ apply the margin condition and substitute
+$s=t\sqrt b$:
+$\int_0^{t_0}bt\,e^{-bt^2/2}C_mt^\beta dt
+\le C_m b^{-\beta/2}\int_0^\infty s^{\beta+1}e^{-s^2/2}ds
+=C_m2^{\beta/2}\Gamma(\tfrac\beta2+1)\,b^{-\beta/2}$.
+\end{proof}
+
+The substitution $s=t\sqrt b$ displays the mechanism: the polynomial
+aggregate rate is the margin-distribution average of per-problem
+exponentials, dominated by problems at margin $\asymp b^{-1/2}$.  With
+$b=N$ this is precisely the finite-generation floor of the companion note,
+now read as the \emph{fixed-allocation baseline} of a design problem.
+
+\section{Oracle allocation}
+
+The oracle sees $M_q$ and allocates, for parameters $m_0\in(0,t_0]$,
+$\lambda\ge0$,
+\begin{equation}
+\label{eq:oracle-alloc}
+n_{\mathrm{or}}(q)
+=
+\Big\lceil \tfrac{2(\lambda+\log(A-1))}{M_q^2}\Big\rceil
+\,\one\{M_q\ge m_0\}
+\end{equation}
+(abandoning sub-cutoff and hopeless problems --- abandoning $M_q\le0$
+problems is free, since the clean rule errs there too).
+
+\begin{theorem}[Oracle allocation, $\beta<2$]
+\label{thm:oracle}
+Under Assumption~\ref{ass:margin} with $\beta\in(0,2)$, the allocation
+\eqref{eq:oracle-alloc} satisfies
+\[
+\mathcal E_{\mathrm{or}}
+\le
+C_m m_0^\beta+e^{-\lambda},
+\qquad
+\E[n_{\mathrm{or}}(q)]
+\le
+2\big(\lambda+\log(A-1)\big)
+\Big[\tfrac{2C_m}{2-\beta}m_0^{\beta-2}+C_mt_0^{\beta-2}+t_0^{-2}\Big]+1 .
+\]
+\end{theorem}
+
+\begin{proof}
+\emph{Excess:} the abandoned band $\{0<M_q<m_0\}$ has mass $\le C_mm_0^\beta$;
+on $\{M_q\ge m_0\}$, Lemma~\ref{lem:perproblem} with
+$n\ge2(\lambda+\log(A-1))/M_q^2$ gives conditional error $\le e^{-\lambda}$.
+Combine via \eqref{eq:onesided}.
+
+\emph{Budget:} with $F(t)=\Pp\{0<M_q\le t\}\le C_mt^\beta$ ($t\le t_0$),
+$\E[n_{\mathrm{or}}]\le2(\lambda+\log(A-1))\,\E[M_q^{-2}\one\{M_q\ge
+m_0\}]+1$.  Split at $t_0$; on $(t_0,1]$ bound $M_q^{-2}\le t_0^{-2}$.  On
+$[m_0,t_0]$ integrate by parts:
+\[
+\int_{[m_0,t_0]}m^{-2}dF(m)
+=\big[F(m)m^{-2}\big]_{m_0^-}^{t_0}+2\int_{m_0}^{t_0}F(m)m^{-3}dm
+\le C_mt_0^{\beta-2}+\tfrac{2C_m}{2-\beta}\,m_0^{\beta-2},
+\]
+dropping the nonpositive lower boundary term and using $\beta<2$ (the
+divergence of $\int m^{\beta-3}dm$ at the lower limit is exactly why a
+cutoff is necessary).
+\end{proof}
+
+\begin{corollary}[Oracle rate]
+\label{cor:oracle-rate}
+With $m_0=(\log b/b)^{1/(2-\beta)}\wedge t_0$ and
+$\lambda=\tfrac{\beta}{2-\beta}\log b$: expected budget $O(b)$ and
+\[
+\mathcal E_{\mathrm{or}}(b)
+\ \lesssim\
+\Big(\frac{\log b}{b}\Big)^{\beta/(2-\beta)} .
+\]
+\end{corollary}
+
+\begin{remark}[Why $\beta<2$]
+\label{rem:phase}
+The constraint $\beta<2$ enters through the divergence of
+$\int m^{\beta-3}\,dm$ at the origin: for $\beta<2$ the expected resolution
+cost $\E[M^{-2}]$ is infinite and a cutoff is unavoidable.  For $\beta\ge2$
+the cost is (log-)integrable and the rates change character entirely ---
+adaptive allocation becomes exponentially efficient.
+Section~\ref{sec:phase} develops this phase transition, with matching lower
+bounds.
+\end{remark}
+
+\section{Sequential allocation without an oracle}
+\label{sec:sequential}
+
+Parameters: cap $\nmax\ge2$, failure level $\delta\in(0,1)$; set
+$J=\lceil\log_2\nmax\rceil$, $L=\log\frac{2(A-1)J}{\delta}$,
+$\eps(n)=\sqrt{2L/n}$.
+
+\medskip
+\noindent\textbf{Sequential rule} (independently on each problem):
+for epochs $j=1,\dots,J$ with sizes $n_j=\min\{2^j,\nmax\}$, sample to $n_j$
+total rounds and compute $\Mhat^{(n_j)}_q$; \textbf{stop} and output the
+plurality answer if $|\Mhat^{(n_j)}_q|>\eps(n_j)$, or upon reaching the cap.
+
+\medskip
+The rule tests the sign of $M_q$: keep sampling while the interval
+$\Mhat\pm\eps(n)$ straddles zero.  It knows neither $M_q$, nor $\beta$, nor
+$\D$.
+
+\begin{lemma}[Anytime accuracy]
+\label{lem:anytime}
+For each $q$, the event
+$G_q=\{|\Mhat^{(n_j)}_q-M_q|\le\eps(n_j)\ \forall j\le J\}$ has
+$\Pp(G_q^c\mid q)\le\delta$.
+\end{lemma}
+
+\begin{proof}
+For fixed $j$ and wrong answer $a$, two-sided Hoeffding on the first $n_j$
+per-round differences gives deviation probability $\le2e^{-n_j\eps(n_j)^2/2}
+=2e^{-L}=\delta/((A-1)J)$; union over $a$ and the $J$ checkpoints; the
+empirical margin (a minimum over $a$) moves by at most the largest pairwise
+deviation.  Sample reuse across epochs is immaterial: each checkpoint
+constrains the average of the first $n_j$ rounds, and the union bound is
+over fixed checkpoints.
+\end{proof}
+
+\begin{lemma}[Behavior on the good event]
+\label{lem:behavior}
+Set $\bar m=2\eps(\nmax)$ and $\bar m'=4\sqrt{L/\nmax}$.  On $G_q$:
+(i) any stop by threshold has the correct sign, and a positive-sign stop
+outputs $a^\star(q)$;
+(ii) if $|M_q|>0$ then $n_q\le\min\{16L/M_q^2,\nmax\}$, and every problem
+with $|M_q|\ge\bar m$ decides before the cap;
+(iii) reaching the cap undecided implies $|M_q|\le\bar m$.
+\end{lemma}
+
+\begin{proof}
+(i) $\Mhat^{(n_j)}_q>\eps(n_j)$ forces $M_q>0$ on $G_q$, and
+$\Mhat^{(n_j)}_q>0$ means the gold answer strictly leads empirically; the
+negative case is symmetric.  (ii) Let $m=|M_q|$ and $j^\ast$ the first epoch
+with $\eps(n_{j^\ast})<m/2$; on $G_q$,
+$|\Mhat^{(n_{j^\ast})}_q|\ge m-\eps(n_{j^\ast})>\eps(n_{j^\ast})$, so the
+rule stops by epoch $j^\ast$; since $\eps(n)<m/2\iff n>8L/m^2$ and epochs
+double, $n_{j^\ast}\le16L/m^2$.  For $m\ge\bar m$, $8L/m^2\le\nmax$.
+(iii) is the contrapositive.
+\end{proof}
+
+\begin{theorem}[Sequential allocation]
+\label{thm:sequential}
+Under Assumption~\ref{ass:two-sided} with $\beta\in(0,2)$, if
+$\bar m'=4\sqrt{L/\nmax}\le t_0$ then
+\[
+\mathcal E_{\mathrm{seq}}
+\le
+\delta+C_m\bar m^\beta,
+\qquad
+\E[n_q]
+\le
+16L\Big[\tfrac{2C_m}{2-\beta}(\bar m')^{\beta-2}
++C_m(\bar m')^{\beta-2}+C_mt_0^{\beta-2}+t_0^{-2}\Big]
++\delta\nmax+2 .
+\]
+\end{theorem}
+
+\begin{proof}
+\emph{Excess:} on $G_q^c$ pay $\delta$ (Lemma~\ref{lem:anytime}).  On $G_q$:
+problems with $M_q>\bar m$ stop with the positive decision and are correct
+(Lemma~\ref{lem:behavior}(i),(ii)); the band $0<M_q\le\bar m$ pays its mass
+$\le C_m\bar m^\beta$ (Assumption~\ref{ass:two-sided}, $\bar m\le t_0$);
+problems with $M_q\le0$ contribute nonpositively, by \eqref{eq:onesided}.
+
+\emph{Budget:} on $G_q$, $n_q\le\min\{16L/M_q^2,\nmax\}$; on $G_q^c$,
+$n_q\le\nmax$, contributing $\delta\nmax$.  Split the minimum at
+$|M_q|\lessgtr\bar m'$ (where $16L/(\bar m')^2=\nmax$):
+$\nmax\Pp\{|M_q|\le\bar m'\}\le16LC_m(\bar m')^{\beta-2}$ by
+Assumption~\ref{ass:two-sided}, and
+$\E[M_q^{-2}\one\{|M_q|>\bar m'\}]$ is bounded by the same integration by
+parts as in Theorem~\ref{thm:oracle} with the two-sided
+$F(t)=\Pp\{0<|M_q|\le t\}$.  The $+2$ absorbs epoch rounding.
+\end{proof}
+
+\begin{corollary}[Sequential rate]
+\label{cor:seq-rate}
+Choosing $\nmax=\lceil b^{2/(2-\beta)}\rceil$, $\delta=1/\nmax$ yields
+expected spend $O(b(\log b)^{\beta/2})$ and excess
+$O((\log b)^{\beta/2}\,b^{-\beta/(2-\beta)})$; re-normalizing the budget,
+with expected spend $\le b$,
+\[
+\mathcal E_{\mathrm{seq}}(b)
+\ \lesssim\
+\Big(\frac{\log b}{b}\Big)^{\beta/(2-\beta)},
+\]
+matching the oracle rate of Corollary~\ref{cor:oracle-rate} including the
+power of the logarithm.
+\end{corollary}
+
+\begin{remark}[Adaptive self-consistency: the case $K=1$]
+\label{rem:selfconsistency}
+With one model the rule reads: \emph{sample until the leading answer's lead
+over the runner-up exceeds the confidence radius, or a cap is hit; output
+the leader}.  Corollary~\ref{cor:seq-rate} is thus a rate theory for
+adaptive self-consistency, with $\beta$ measuring the prevalence of
+questions on which the model is nearly torn between answers.  Nothing in
+the proofs uses $K>1$.
+\end{remark}
+
+\begin{remark}[Strict total budgets]
+\label{rem:total-budget}
+Over $T$ i.i.d.\ problems the total spend concentrates: each $n_{q_t}$ is
+bounded by $\nmax$, so Bernstein gives
+$\sum_tn_{q_t}\le2T\E[n_q]$ with probability
+$1-e^{-cT\E[n_q]/\nmax}$, which is high as soon as
+$T\gg b^{\beta/(2-\beta)}$ (up to logs).  A hard global stop at $2Tb$ then
+never triggers on this event, leaving the risk bound unchanged.
+\end{remark}
+
+\section{Minimax lower bounds}
+\label{sec:lower}
+
+Both rates are optimal over the class defined by the margin condition.  Let
+$\class(\beta,C_m,t_0)$ be the set of populations satisfying
+Assumption~\ref{ass:margin} at $\wfix$.  The hard populations below use
+two-answer problems with all $K$ models identical,
+$p_i(g\mid q)=\frac{1+m}{2}$ for a gold label $g$ drawn uniformly from the
+two answers, independently per problem; then $M_q(\wfix)=m$ for every
+$\wfix$, one round is informationally one $\Ber(\frac{1+m}{2})$ observation,
+all margins are positive (so $R(\wfix)=0$ and excess $=$ error probability),
+and the constructions lie in $\class$ --- and in its two-sided refinement ---
+for every $K$, $A\ge2$, and every fixed $\wfix$.  The label randomization is
+what makes the lower bound binding for arbitrary decision rules: the data
+identify the gold answer only through which answer leads.
+
+\begin{lemma}[Two-point bound with adaptive stopping]
+\label{lem:lecam}
+Fix margin $m\le\frac12$ and $g$ uniform on the two answers.  For any
+stopping rule $\tau$ and output $\widehat a$,
+\[
+\Pp\{\widehat a\ne g\}
+\ \ge\
+\frac{1-\TV(P_{\mathsf u},P_{\mathsf v})}{2},
+\qquad
+\TV(P_{\mathsf u},P_{\mathsf v})
+\le
+m\sqrt{2\min\{\E_{\mathsf u}[\tau],\E_{\mathsf v}[\tau]\}},
+\]
+where $P_{\mathsf u},P_{\mathsf v}$ are the joint laws of
+$(\tau,\text{observations},\widehat a)$ under the two labels.  In
+particular, $\E[\tau]\le\frac{1}{8m^2}$ forces error probability
+$\ge\frac14$.
+\end{lemma}
+
+\begin{proof}
+Le Cam's two-point inequality gives the first display.  For the second:
+under the two labels the rounds are i.i.d.\ $\Ber(\frac{1\pm m}{2})$, with
+$\KL(\Ber(\tfrac{1+m}{2})\Vert\Ber(\tfrac{1-m}{2}))
+=m\log\frac{1+m}{1-m}\le4m^2$ on $(0,\frac12]$.  The divergence
+decomposition for adaptively stopped i.i.d.\ sequences (Wald's identity on
+the log-likelihood ratio) gives
+$\KL(P_{\mathsf u}\Vert P_{\mathsf v})=\E_{\mathsf u}[\tau]\,
+\KL(\Ber(\tfrac{1+m}{2})\Vert\Ber(\tfrac{1-m}{2}))\le4m^2\E_{\mathsf
+u}[\tau]$ (the output adds nothing, by data processing); Pinsker converts
+to $\TV$; the symmetric argument gives the other branch of the minimum.
+\end{proof}
+
+\begin{theorem}[Uniform allocation is stuck at $b^{-\beta/2}$]
+\label{thm:lower-uniform}
+For every $\beta>0$ and $b\ge t_0^{-2}/8$ there is
+$\D_{\mathrm u}\in\class(\beta,C_m,t_0)$ such that every uniform-allocation
+procedure with budget $b$ has
+$\mathcal E_\pi(\D_{\mathrm u})\ge\frac{C_m}{4}(8b)^{-\beta/2}\wedge\frac18$.
+\end{theorem}
+
+\begin{proof}
+Let $\D_{\mathrm u}$ draw $m$ with CDF $\frac{C_m}{2}t^\beta$ on
+$(0,t_1]$, $t_1=\min\{t_0,(2/C_m)^{1/\beta}\}$, remaining mass at $m=1$.
+Problems with $m\le m_b:=(8b)^{-1/2}$ have, at deterministic spend $b$,
+$\TV\le m_b\sqrt{2b}=\frac12$ (Lemma~\ref{lem:lecam}), hence conditional
+error $\ge\frac14$; their mass is $\frac{C_m}{2}m_b^\beta$ when $m_b\le
+t_1$, else $\ge\frac12$.
+\end{proof}
+
+\begin{theorem}[No strategy beats $b^{-\beta/(2-\beta)}$]
+\label{thm:lower-adaptive}
+Let $\beta\in(0,2)$.  There are $c_1,b_0>0$ (depending on
+$\beta,C_m,t_0$) such that for every $b\ge b_0$ there is
+$\D_b\in\class(\beta,C_m,t_0)$ with: every procedure with expected
+per-problem spend $\le b$ has
+$\mathcal E_\pi(\D_b)\ge c_1\,b^{-\beta/(2-\beta)}$.
+\end{theorem}
+
+\begin{proof}
+Set $m_0=(\frac{C_m}{64b})^{1/(2-\beta)}$ and $\mu=\frac{C_m}{2}m_0^\beta$;
+let $\D_b$ put mass $\mu$ on \emph{atom} problems with margin $m_0$ and
+mass $1-\mu$ on deterministic problems ($m=1$), labels uniform.  ($b_0$
+ensures $m_0\le t_0\wedge\frac12$, $\mu\le\frac12$; membership in $\class$
+is immediate, and the population also satisfies the two-sided condition and
+the matching lower mass bound, so it lies in every version of the class.)
+By Markov, the conditional expected spend on atoms is $T\le b/\mu$, so
+$\min\{\E_{\mathsf u}\tau,\E_{\mathsf v}\tau\}\le2b/\mu$, and by
+Lemma~\ref{lem:lecam},
+\[
+\TV\le m_0\sqrt{\tfrac{4b}{\mu}}
+=\sqrt{\tfrac{8\,b\,m_0^{2-\beta}}{C_m}}
+=\sqrt{\tfrac{8}{64}}\le\tfrac12
+\quad\Longrightarrow\quad
+\mathcal E_\pi\ge\frac\mu4=\frac{C_m}{8}
+\Big(\frac{C_m}{64}\Big)^{\beta/(2-\beta)}b^{-\beta/(2-\beta)} .
+\]
+Cross-problem adaptivity changes nothing: labels are independent across
+problems, so other problems' data are independent of an atom's label, and
+only the marginal expected spend entered.
+\end{proof}
+
+\begin{remark}[The rates are pinned]
+For $\beta\in(0,2)$, over $\class(\beta,C_m,t_0)$:
+uniform $\asymp b^{-\beta/2}$; adaptive between $c\,b^{-\beta/(2-\beta)}$
+and $C(\log b/b)^{\beta/(2-\beta)}$.  The uniform-versus-adaptive exponent
+gap is real.  For $\beta\ge2$ no polynomial lower bound is possible: the
+adversary's plantable mass $\mu\asymp m_0^\beta$ times the resolution cost
+$m_0^{-2}$ vanishes, so the spend-accounting step yields nothing ---
+consistent with the exponential upper bounds beyond the transition.
+Anti-concentration is built into the constructions (Bernoulli rounds have
+variance $\ge\frac34$ near the boundary); a lower bound at a \emph{fixed}
+population would need it as an assumption.
+\end{remark}
+
+\section{The full range of $\beta$: a phase transition at $\beta=2$}
+\label{sec:phase}
+
+The rates of Sections 4--7 concern $\beta\in(0,2)$.  This section completes
+the picture.  The organizing quantity is the expected resolution cost
+\[
+\mu_2:=\E\big[M_q^{-2}\one\{M_q>0\}\big],
+\]
+which is finite precisely when the margin condition holds with some
+$\beta>2$ (integration by parts; the boundary term $F(m)m^{-2}\le
+C_mm^{\beta-2}$ vanishes at $0^+$ exactly then).  The results of this
+section, in summary:
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+regime & uniform & adaptive \\
+\hline
+$\beta\in(0,2)$ & $\Theta(b^{-\beta/2})$ &
+$\Theta(b^{-\beta/(2-\beta)})$ up to $\log$ \\
+$\beta=2$ & $\Theta(b^{-1})$ & $e^{-\Theta(\sqrt b)}$ \\
+$\beta>2$ & $\Theta(b^{-\beta/2})$ & $e^{-\Theta(b)}$ \\
+hard margin ($\mmin>0$) & $\le e^{-b\mmin^2/2}$ &
+$\le e^{-(b-1)/(2\mu_2)}$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\noindent
+Uniform allocation has \emph{no} transition: Theorem~\ref{thm:lower-uniform}
+holds for every $\beta>0$, so on continuum populations the uniform rate
+merely steepens as $b^{-\beta/2}$.  The transition is intrinsically about
+adaptivity --- only an allocator that spends $\asymp M_q^{-2}$ where needed,
+rather than $b$ everywhere, can exploit the integrability of the resolution
+cost.  For $\beta>2$ the uniform-versus-adaptive separation is therefore
+polynomial versus exponential.
+
+In the exponential regime, Pinsker's inequality (the route to
+Lemma~\ref{lem:lecam}) is vacuous; the lower bounds instead use the
+Bretagnolle--Huber inequality, which combined with the divergence
+decomposition for stopped sequences gives, in the setting of
+Lemma~\ref{lem:lecam},
+\begin{equation}
+\label{eq:bh}
+\Pp\{\widehat a\ne g\}
+\ \ge\
+\tfrac14\,e^{-8m^2T},
+\qquad
+T=\text{label-averaged expected spend.}
+\end{equation}
+
+\begin{theorem}[$\beta>2$: exponential rates, matched]
+\label{thm:beta-gt2}
+Let Assumption~\ref{ass:margin} hold with $\beta>2$, so
+$\mu_2\le C_mt_0^{\beta-2}(1+\tfrac2{\beta-2})+t_0^{-2}<\infty$.
+\begin{enumerate}
+\item[(i)] The cutoff-free allocation
+$n(q)=\lceil2(\lambda+\log(A-1))/M_q^2\rceil\one\{M_q>0\}$ achieves, at
+expected spend $b$,
+\[
+\mathcal E_{\mathrm{or}}(b)\ \le\ (A-1)\,e^{-(b-1)/(2\mu_2)} .
+\]
+\item[(ii)] Conversely, with $m_*=t_0$ and
+$\mu_0=\min\{C_mt_0^\beta,\frac12\}$, the population placing mass $\mu_0$
+at margin $m_*$ (gold labels uniform) and the rest at margin $1$ lies in
+$\class(\beta,C_m,t_0)$, and every procedure with expected spend $\le b$
+suffers
+\[
+\mathcal E_\pi\ \ge\ \frac{\mu_0}{4}\,e^{-8m_*^2b/\mu_0} .
+\]
+When the atom dominates $\mu_2$ (i.e.\ $\mu_0m_*^{-2}\ge1$), the two
+exponential rate constants agree up to a universal factor.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(i): as in Theorem~\ref{thm:oracle} with $m_0=0$ now admissible: every
+positive-margin problem is driven to conditional error $e^{-\lambda}$ at
+expected cost $2(\lambda+\log(A-1))\mu_2+1$; invert the budget.  (ii):
+class membership as in Theorem~\ref{thm:lower-adaptive}; Markov gives
+label-averaged spend $T\le b/\mu_0$ on the atom; apply \eqref{eq:bh} and
+multiply by the atom mass.  For the constants comparison,
+$\mu_2=\mu_0m_*^{-2}+(1-\mu_0)\le2\mu_0m_*^{-2}$ when
+$\mu_0m_*^{-2}\ge1$, so $8m_*^2/\mu_0\le16/\mu_2$.
+\end{proof}
+
+\begin{theorem}[$\beta=2$: stretched exponentials, matched in form]
+\label{thm:beta2}
+Let $\beta=2$.
+\begin{enumerate}
+\item[(i)] Under Assumption~\ref{ass:margin}, oracle allocation with
+cutoff $m_0$ and $\lambda=2\log(t_0/m_0)$ spends
+$O\big((\log(t_0/m_0))^2\big)$ in expectation (the budget integral is now
+logarithmic), so at expected spend $b$,
+$\mathcal E_{\mathrm{or}}(b)\le Ce^{-c\sqrt b}$.
+\item[(ii)] Conversely, let $c_0=\frac34C_mt_0^2\wedge\frac13$ and let
+$\D_b$ be the \emph{geometric ladder}: margins $m_j=t_02^{-j}$ with masses
+$\mu_j=c_04^{-j}$, $j\le J$, gold labels uniform, remaining mass at margin
+$1$.  Then $\D_b\in\class(2,C_m,t_0)$, and with
+$J\asymp\sqrt b$, every procedure with expected spend $\le b$ suffers
+$\mathcal E_\pi\ge\frac{c_0}{4}e^{-C_\star\sqrt b}$, with $C_\star$
+depending only on $(C_m,t_0)$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(i): at $\beta=2$,
+$\int_{m_0}^{t_0}F(m)m^{-3}dm\le C_m\log(t_0/m_0)$ in the budget bound of
+Theorem~\ref{thm:oracle}; with $\lambda=2\log(t_0/m_0)$ the spend is
+$\lesssim(\log(t_0/m_0))^2$ and the excess is $\lesssim(m_0/t_0)^2$; choose
+$\log(t_0/m_0)\asymp\sqrt b$.  (ii): membership follows since
+$\Pp\{0<M\le t\}\le\frac43c_04^{-k}\le C_mt^2$ for $t\in[m_k,m_{k-1})$.
+The ladder is \emph{scale-invariant}: $m_j^2/\mu_j=t_0^2/c_0$ for every
+$j$ --- every scale is equally expensive to clear, and there are $J$ of
+them.  Let $T_j$ be the label-averaged expected spend at scale $j$; the
+budget forces some $j^\ast$ with $\mu_{j^\ast}T_{j^\ast}\le b/J$, whence by
+\eqref{eq:bh} and scale invariance the conditional error at scale $j^\ast$
+is $\ge\frac14e^{-(8t_0^2/c_0)\,b/J}$, and
+$\mathcal E_\pi\ge\mu_{j^\ast}\cdot\frac14e^{-(8t_0^2/c_0)b/J}
+\ge\frac{c_0}4e^{-(8t_0^2/c_0)b/J-2J\log2}$.  Optimizing $J\asymp\sqrt b$
+balances the exponents at $C_\star\sqrt b$.
+\end{proof}
+
+The scale-invariant ladder is the structural signature of criticality: it
+is the discrete version of the margin density that makes $\mu_2$ diverge
+logarithmically.  We find it noteworthy that the pigeonhole argument
+closes the critical case with no logarithmic gap in the exponent's power
+of $b$.
+
+\subsection{Hard margins: how the theory reads on a finite benchmark}
+\label{sec:hard-margin}
+
+Every real benchmark is a finite atomic population.  Such a population has
+a minimum positive margin $\mmin>0$, hence satisfies the margin condition
+\emph{vacuously for every $\beta$ simultaneously} (take $t_0=\mmin/2$; the
+near-boundary band is empty).  In particular, no exponent $\beta$ is
+identified by class membership on a finite benchmark --- consistent with our
+companion validation study, which fits only \emph{band-limited effective}
+exponents.  The correct asymptotic statement is exponential:
+
+\begin{proposition}[Hard-margin populations]
+\label{prop:hard-margin}
+Let $\D$ be finitely supported with
+$\mmin=\min\{M_q:M_q>0\}>0$, $p_+=\Pp\{M_q>0\}$.  Then
+\[
+\mathcal E_{\mathrm{unif}}(b)\le(A-1)\,p_+\,e^{-b\mmin^2/2},
+\qquad
+\mathcal E_{\mathrm{adapt}}(b)\le(A-1)\,e^{-(b-1)/(2\mu_2)},
+\]
+and the ratio of the exponential rate constants is
+\[
+\frac{1/(2\mu_2)}{\mmin^2/2}
+=\frac{1}{\E\big[(\mmin/M_q)^2\one\{M_q>0\}\big]}\ \ge\ 1 :
+\]
+an \emph{effective number of hardest problems}.  Uniform allocation's rate
+constant is set by the single hardest problem; adaptive allocation's by the
+average resolution cost.  If one problem among $Q_0$ (uniform empirical
+measure) is uniquely hardest, the ratio is $\approx Q_0$.
+\end{proposition}
+
+\begin{remark}[The polynomial regime is the transient --- and the operating
+regime]
+\label{rem:transient}
+The exponential asymptotics switch on at the crossover budget
+$b\approx\mmin^{-2}$, where the hardest problem resolves.  Below it, the
+uniform excess $\sum_qP(q)e^{-bM_q^2/2}$ is a sum of exponentials whose
+rate constants fill a band, and over the window in which those scales are
+extinguished one by one it tracks a power law --- whose log--log slope is
+precisely the band-limited effective $\beta$ measured by our resampling
+experiments (there, budgets $N'\le100$ sit below the crossover).  Thus:
+polynomial rates with the measured effective $\beta$ describe the operating
+regime $b\lesssim\mmin^{-2}$ of a finite benchmark; beyond the crossover,
+decay is exponential and adaptivity buys the rate-constant factor of
+Proposition~\ref{prop:hard-margin}.  For a continuum margin distribution
+with $\Pp\{0<M\le t\}\asymp t^\beta$ near zero, the ``transient'' is exact
+and permanent --- that is the theory of Sections 4--7.
+\end{remark}
+
+\begin{remark}[Relation to bandit hardness]
+$\mu_2$ is the population analog of the hardness quantity
+$H=\sum_i\Delta_i^{-2}$ of best-arm identification and thresholding
+bandits, where exponential error decay likewise has rate constant $1/H$.
+The margin condition is then a tail condition on the arm-gap distribution
+determining whether $H$ is finite ($\beta>2$) or infinite ($\beta<2$), with
+the allocation rates changing character exactly at the integrability
+threshold.  We are not aware of a prior statement of this transition in an
+allocation-across-problems setting; the closest analog is the exponential
+speedup of active learning under bounded (Massart) noise relative to
+polynomial rates under Tsybakov noise.
+\end{remark}
+
+\section{Knowing versus learning: the two-sided condition}
+\label{sec:twosided}
+
+The oracle results use the one-sided margin condition; the sequential
+learner uses the two-sided one.  This asymmetry is intrinsic, not an
+artifact of the proofs.  A problem with margin slightly below zero
+contributes nothing to the excess --- it is lost regardless --- but a learner
+cannot know this without paying for it: deciding the sign at $|M|=m$ costs
+$\asymp m^{-2}$ rounds (Lemma~\ref{lem:lecam}), and the cost is symmetric in
+the sign.  Concretely, augment the population of
+Theorem~\ref{thm:lower-adaptive} with mass $\nu$ at margin $-m_0$ ---
+permitted by the one-sided class, which does not constrain the negative
+side.  A procedure achieving the adaptive excess rate must distinguish
+$\pm m_0$ on the positive atoms, and the sampling laws at $\pm m_0$ are
+mutually indistinguishable before $\asymp m_0^{-2}$ rounds; symmetry then
+forces expected spend $\gtrsim\nu m_0^{-2}$ on the negative atoms.  For
+constant $\nu$ this forces $b\gtrsim m_0^{-2}$, collapsing the achievable
+cutoff to $m_0\asymp b^{-1/2}$ and the excess to the \emph{uniform} rate
+$b^{-\beta/2}$.  (We state this as a sketch; the full two-hypothesis
+argument is routine but notationally heavy.)  In words:
+
+\begin{center}
+\emph{One-sided margin control is what an oracle needs;\\
+two-sided margin control is what a learner's budget buys.}
+\end{center}
+
+This retroactively motivates the absolute-margin condition appearing in the
+fast-rate analysis of the companion note, and it has a practical echo: weight
+vectors that park problems near the zero boundary (as raw sign-MILP
+solutions do) are budget poison for adaptive sampling --- yet another reason,
+beyond the estimation pathologies documented in the companion note, to
+prefer buffered/max-margin weight selection.
+
+\section{Composing with weight learning}
+\label{sec:compose}
+
+The natural end-to-end protocol is two-stage: learn $\what$ on $Q$ labeled
+problems with $N$ generations each (buffered ERM, companion note), then
+deploy $\what$ with sequential allocation at budget $b$ on test problems.
+If the margin condition holds at $\wstar$ (two-sided, with the max-margin
+comparator convention) and $\norm{\what-\wstar}_1$ is small, margins move by
+at most $\norm{\what-\wstar}_1$ (the margin is $1$-Lipschitz in $\ell_1$),
+so the margin condition transfers to $\what$ with an adjusted band; the
+resulting excess is bounded by the sum of the learning term and the
+allocation term,
+\[
+R_{\mathrm{total}}
+\;\lesssim\;
+R(\wstar)
++\underbrace{\sqrt{\tfrac{K\log(AQ)}{Q}}
++\Big(\tfrac{\log(KAQ)}{N}\Big)^{\beta/2}}_{\text{learning }\what}
++\underbrace{\Big(\tfrac{\log b}{b}\Big)^{\beta/(2-\beta)}}_{\text{allocating at }\what}.
+\]
+We state this informally; the bookkeeping (transfer of the margin condition
+from $\wstar$ to $\what$) mirrors the local analysis in the companion note
+and is deferred to the merged paper.  The formula makes the division of
+labor explicit: $Q$ is fixed by the world and bounds what weights can ever
+be learned; $b$ is compute, and its exponent is dictated by $\beta$ alone.
+
+\section{What no compute can buy: the diversity floor}
+\label{sec:floor}
+
+All results here concern the excess over $R(\wfix)$.  The risk $R(\wfix)$
+itself is bounded below by the mass of problems on which the model pool is
+jointly hopeless --- e.g.\ no convex combination of the models' answer
+distributions puts the gold answer in the lead (on AIME2024, problems where
+no policy has gold as plurality).  That floor is a property of model
+\emph{diversity}: it is set by the correlation structure of the models'
+errors, not by compute, and it caps what any allocation policy can achieve.
+A quantitative theory of this floor --- predicting ensemble risk from an
+error-dependence structure, an ``effective number of independent models,''
+and hence the marginal value of adding a model to the pool --- is the natural
+sequel to this work and is deliberately out of scope here.
+
+\section{Empirical program}
+\label{sec:empirics}
+
+The theory suggests three experiments, all runnable from saved generations
+by extending the bootstrap harness of our resampling study (no new model
+calls; semi-synthetic in the same sense as the $N$-floor validation):
+
+\begin{enumerate}
+\item \textbf{Uniform-versus-sequential at equal spend.}  Treat the $N=100$
+empirical answer distributions as ground truth; run the sequential rule of
+Section~\ref{sec:sequential} in the bootstrap and compare its excess-versus-
+average-spend curve with uniform allocation at fixed $w$.  Prediction:
+uniform decays with slope $-\beta/2$, sequential with slope
+$-\beta/(2-\beta)$, on log-log axes (band-limited over the resolvable margin
+range, as always on $30$ atoms).
+\item \textbf{Spend histogram.}  The sequential rule's per-problem spend
+should track $\min\{16L/M_q^2,\nmax\}$: a direct, visualizable signature of
+the $m^{-2}$ law on real margins.
+\item \textbf{Boundary-atom stress test.}  Run the same comparison at the
+raw sign-MILP weights (atoms at $M\approx10^{-4}$): the sequential rule
+should be forced to the cap on the atom problems, degrading toward the
+uniform rate --- the budget-poison phenomenon of Section~\ref{sec:twosided}
+on real data.
+\end{enumerate}
+
+Controlled simulations with planted $\beta$ (both channels) then validate
+the exponents proper, which no $30$-problem benchmark can identify; the
+same simulations exhibit the $\beta=2$ transition (log-excess linear in
+$\sqrt b$ at criticality, in $b$ beyond it) and, on finite atomic
+populations, the transient-to-exponential crossover at $b\approx\mmin^{-2}$
+together with the rate-constant ratio of
+Proposition~\ref{prop:hard-margin}.
+
+\appendix
+
+\section{Deferred detail: constants in Corollary~\ref{cor:seq-rate}}
+With $\nmax=\lceil b^{2/(2-\beta)}\rceil$, $\delta=1/\nmax$:
+$J\asymp\frac{2}{2-\beta}\log b$, $L\le c(\beta,A)\log b$;
+the dominant budget term is
+$16L\cdot\frac{3C_m}{2-\beta}(\bar m')^{\beta-2}
+\asymp(\log b)^{\beta/2}b$ since
+$(\bar m')^{\beta-2}=(16L/\nmax)^{(\beta-2)/2}$; the excess band is
+$C_m\bar m^\beta=C_m(8L/\nmax)^{\beta/2}
+\asymp(\log b)^{\beta/2}b^{-\beta/(2-\beta)}$ and
+$\delta=b^{-2/(2-\beta)}$ is of smaller order for $\beta<2$.  Substituting
+the reduced budget $b/(C(\log b)^{\beta/2})$ multiplies the excess by
+$(\log b)^{\frac{\beta}{2-\beta}\cdot\frac{\beta}{2}\cdot\frac{2-\beta}{\beta}}
+=(\log b)^{\beta/2}$-type factors that collapse into the stated
+$(\log b/b)^{\beta/(2-\beta)}$ after enlarging the constant.
+\end{document}
