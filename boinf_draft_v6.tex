@@ -1,0 +1,3126 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{mathrsfs}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage[round]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage[nameinlink,capitalize]{cleveref}
+
+\hypersetup{
+  pdftitle={Two Sample Sizes in Test-Time LLM Ensembling: Buffered ERM and a Scalar Minimax Theory},
+  pdfauthor={Anonymous Authors}
+}
+
+\pdfstringdefDisableCommands{%
+  \def\beta{beta}%
+  \def\theta{theta}%
+  \def\omega{omega}%
+  \def\infty{infinity}%
+  \def\Delta{Delta}%
+}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{example}[theorem]{Example}
+
+\crefname{assumption}{Assumption}{Assumptions}
+\Crefname{assumption}{Assumption}{Assumptions}
+\crefname{conjecture}{Conjecture}{Conjectures}
+\Crefname{conjecture}{Conjecture}{Conjectures}
+
+\newcommand\pr{\mathbb P}
+\newcommand{\Pp}{\mathbb P}
+\newcommand{\E}{\mathbb E}
+\newcommand{\R}{\mathbb R}
+\newcommand{\N}{\mathbb N}
+\newcommand{\one}{\mathbf 1}
+\newcommand{\sgn}{\operatorname{sgn}}
+\newcommand{\TV}{\operatorname{TV}}
+\newcommand{\KL}{\operatorname{KL}}
+\newcommand{\Bin}{\operatorname{Bin}}
+\newcommand{\Ber}{\operatorname{Ber}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\calQ}{\mathcal Q}
+\newcommand{\calA}{\mathcal A}
+\newcommand{\calD}{\mathcal D}
+\newcommand{\calG}{\mathcal G}
+\newcommand{\calF}{\mathcal F}
+\newcommand{\calW}{\mathcal W}
+\newcommand{\calR}{\mathcal R}
+\newcommand{\PiN}{\Pi_n}
+\newcommand{\DeltaK}{\Delta_K}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\what}{\widehat w}
+\newcommand{\wstar}{w^\star}
+\newcommand{\abs}[1]{\left|#1\right|}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\inner}[2]{\left\langle#1,#2\right\rangle}
+\newcommand{\dd}{\,\mathrm d}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\lesssimc}{\lesssim}
+\DeclareMathOperator*{\argmin}{argmin}
+
+
+\newcommand\aed[1]{{\color{magenta!60!black} #1}}
+\newcommand\ced[1]{{\color{teal!70!black} #1}}
+\newcommand\ded[1]{{\color{orange!80!black} #1}}
+\newcommand\eed[1]{{\color{green!45!black} #1}}
+\newcommand\aac[1]{{\color{blue!60!black}AA: #1}}
+
+\title{Two Sample Sizes in Test-Time LLM Ensembling:\\
+Buffered ERM and a Scalar Minimax Theory}
+\author{Zhi Zhang and Arash A. Amini}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\aac{To be filled later ...}
+% Test-time ensembling methods sample several answers from one or more language models and aggregate the resulting answer distributions.  In the weighted Best-of-$\infty$ formulation, one learns a convex combination of $K$ fixed language models from a labeled benchmark.  This creates two distinct statistical sample sizes: $Q$, the number of labeled questions used to learn the ensemble weights, and $N$, the number of generations used to estimate each model's answer distribution on each question.  We develop a theory that keeps both sources of randomness explicit.
+
+% For general $K$ and finitely many candidate answers, we propose a margin-buffered empirical risk minimizer.  Under a one-sided comparator margin condition with exponent $\beta$, its clean excess risk is bounded by
+% \[
+% R(\widehat w)-R(w^\star)
+% \lesssim
+% \sqrt{\frac{K\log(AQ)+\log(1/\delta)}{Q}}
+% +
+% \left(\frac{\log(KAQ/\delta)}{N}\right)^{\beta/2}.
+% \]
+% The first term is ordinary generalization across questions; the second is the price of estimating answer distributions from finitely many generations.  A hard-margin scalar submodel shows that the root-$Q$ term is unavoidable under the stated assumptions.
+
+% To understand whether the $N^{-\beta/2}$ term is intrinsic, we isolate an antisymmetric two-model binary submodel.  The ensemble decision reduces exactly to estimating the sign of the linear sign-imbalance functional
+% \[
+% \theta(G)=\int \sgn(z)\,\dd G(z)
+% \]
+% from $Q$ independent observations through an $n=2N$ trial binomial-mixture channel.  On the two-sided margin class $G([-t,t])\le Lt^\beta$, we characterize the minimax decision risk, up to universal constants, by the Hellinger modulus of continuity of $\theta$ through this channel at radius $Q^{-1/2}$.  We prove a genuine finite-generation identification floor of order $N^{-\beta}$, even when $Q=\infty$.  Thus question-by-question plug-in methods are rate-optimal when $Q\lesssim N^\beta$, but can be improved when many questions are available.  A polynomial-moment estimator reaches the $N^{-\beta}$ floor once $Q$ is exponentially large in $N$.  Finally, a Bernstein--Durrmeyer spectral calculation motivates a sharper conjectured interpolation and a three-phase picture between the question-limited and identification-limited regimes.
+\end{abstract}
+
+\section{Introduction}
+
+Generating more than one response at inference time has become a standard way to improve the performance of large language models.  Self-consistency aggregates repeated reasoning paths, while best-of-$N$ and verifier-based methods select among sampled candidates \citep{WangSelfConsistency,CobbeVerifiers,HuangBestN,MukherjeeOT}.  Although these procedures use the samples differently, they share a statistical question: how much of the model's infinite-generation behavior can be recovered from finitely many generations?
+
+Repeated inference therefore introduces a first sample size, $N$, the number of generations for a model and question.  There is, however, a second sample size that is easy to overlook.  A test-time procedure is learned or evaluated on a finite benchmark, but its intended performance concerns a broader population of questions.  We model the benchmark questions as $Q$ draws from a population distribution $\calQ$.  Thus $Q$ controls generalization beyond the observed questions, whereas $N$ controls how well the answer distribution on each question is known.  The two sampling layers are nested: a benchmark score averages over questions, but each term in that average is itself computed from finitely many generations.
+
+We study this interaction in the weighted multi-model setting of Best-of-$\infty$ \citep{KomiyamaBoInf}.  Suppose $K$ fixed LLMs can be queried on a question $q$.  The question has a finite candidate-answer set $\calA(q)$, whose size is uniformly bounded by $A$, and model $i$ has an infinite-generation answer distribution $p_i(\cdot\mid q)$ on $\calA(q)$.  Given weights $w\in\Delta_K$, the ensemble distribution is
+\begin{equation}
+\label{eq:intro-mixture}
+p_w(a\mid q)
+:=
+\sum_{i=1}^K w_i p_i(a\mid q).
+\end{equation}
+Practically, this corresponds to choosing a model independently according to $w$ for each generation and pooling the resulting answers; equivalently, one may allocate asymptotic fractions $w_i$ of the generation budget to the models.  The single-model problem is recovered as a special case.
+
+Assume each question $q$ has a designated gold answer $a^\star(q)\in\calA(q)$.  The ideal ensemble is declared correct only when $a^\star(q)$ is the unique maximizer of \eqref{eq:intro-mixture}, counting ties as errors.  Define the \emph{clean margin}
+\begin{equation}
+\label{eq:intro-clean-margin}
+M_q(w)
+:=
+p_w(a^\star(q)\mid q)
+-
+\max_{a\ne a^\star(q)}p_w(a\mid q).
+\end{equation}
+The population risk, i.e., the average probability of error over the population of questions, is therefore
+\begin{equation}
+\label{eq:intro-clean-risk}
+R(w)
+:=
+\Pp_{q\sim\calQ}\{M_q(w)\le0\}.
+\end{equation}
+We call \eqref{eq:intro-clean-risk} the \emph{clean} risk because it treats the answer distributions $p_i(\cdot\mid q)$ as known.  Our target is a clean-risk minimizer
+\begin{equation}
+\label{eq:intro-oracle}
+w^\star\in\argmin_{w\in\Delta_K}R(w).
+\end{equation}
+
+Neither layer of this risk is observed directly.  In practice, we observe labeled questions
+\[
+q_1,\ldots,q_Q\overset{\mathrm{iid}}{\sim}\calQ
+\]
+where ``labeled'' means that the benchmark supplies each $q_j$ together with its gold answer $a^\star(q_j)$.  We also observe $N$ sampled answers from every model on every question.  The raw generations for model $i$ on question $q_j$ can be summarized by the multinomial count vector
+\[
+X_{j,i}
+:=
+(X_{j,i,a}:a\in\calA(q_j))
+\sim
+\operatorname{Multinomial}\bigl(N,p_i(\cdot\mid q_j)\bigr),
+\qquad
+\widehat p_i(\cdot\mid q_j)=\frac{X_{j,i}}{N}.
+\]
+Here, $X_{j,i,a}$ is the number of times model $i$ generated answer $a$ on question $q_j$.
+
+If the clean distributions $p_i$ were known, ordinary empirical risk minimization over the sampled questions would minimize
+\begin{equation}
+\label{eq:intro-clean-erm}
+\widehat R_Q^{\mathrm{clean}}(w)
+:=
+\frac1Q\sum_{j=1}^Q\one\{M_{q_j}(w)\le0\}.
+\end{equation}
+In practice, $p_i$ is replaced by $\widehat p_i$, giving the empirical margin $\widehat M_{q_j}(w)$ which replaces the clean margin in~\eqref{eq:intro-clean-erm}.
+%so the clean margin for each sampled question is itself estimated from $N$ generations before being thresholded.
+Finite-$N$ noise can then change whether a question is considered solved at a given $w$.  In particular, a favorable fluctuation may produce $\widehat M_{q_j}(w)>0$ even when $M_{q_j}(w)\le0$, causing zero-margin ERM to record an empirical success where the clean ensemble makes an error.  In other words, zero-margin ERM can exploit favorable fluctuations in the empirical margins and effectively overfit to the finite-$N$ generation noise.
+
+This motivates the buffered estimator
+\begin{equation}
+\label{eq:intro-buffered-estimator}
+\widehat w_\eps
+\in
+\argmin_{w\in\Delta_K}
+\frac1Q\sum_{j=1}^Q
+\one\{\widehat M_{q_j}(w)\le\eps\}.
+\end{equation}
+The choice $\eps=0$ recovers the Best-of-$\infty$ ERM introduced by \citet{KomiyamaBoInf}.  When $\eps>0$, a training question is counted as solved only if its empirical margin exceeds $\eps$; empirical margins in $(0,\eps]$ are treated as errors.  On the event
+\begin{equation}
+\label{eq:intro-uniform-event}
+\sup_{j\le Q}\sup_{w\in\Delta_K}
+\bigl|\widehat M_{q_j}(w)-M_{q_j}(w)\bigr|
+\le\eps_N,
+\end{equation}
+we have, simultaneously for every training question and every weight vector,
+\begin{equation}
+\label{eq:intro-sandwich}
+\one\{M_{q_j}(w)\le0\}
+\le
+\one\{\widehat M_{q_j}(w)\le\eps_N\}
+\le
+\one\{M_{q_j}(w)\le2\eps_N\}.
+\end{equation}
+The left inequality prevents the learned rule from claiming empirically certified successes that fail under the clean margin.  The right inequality shows that the price of this protection is confined to a narrow clean-margin band.  This buffered sandwich is the basic mechanism behind our general result.
+
+\subsection{Overview of the results}
+
+Let us now give an overview of the main results, starting with a general bound on the excess risk of the buffered ERM; questions about the optimality of this bound lead to a scalar submodel and its minimax analysis.
+
+\paragraph{Buffered ERM for general ensembles.}
+Take
+\[
+\eps_N
+\asymp
+\sqrt{\frac{\log(KAQ/\delta)}{N}},
+\]
+where $A$ bounds the number of candidate answers, and $\delta > 0$ some specified confidence level.  Under a one-sided margin condition at the clean-risk minimizer,
+\[
+\Pp\{0<M_q(w^\star)\le t\}
+\le C_m t^\beta,
+\]
+the estimator in \eqref{eq:intro-buffered-estimator} (with $\eps=\eps_N$) satisfies
+\begin{equation}
+\label{eq:intro-main}
+R(\widehat w_{\eps_N})-R(w^\star)
+\lesssim
+\sqrt{\frac{K\log(AQ)+\log(1/\delta)}{Q}}
++
+C_m\left(\frac{\log(KAQ/\delta)}{N}\right)^{\beta/2}.
+\end{equation}
+The first term is generalization across questions.  The second is the cost of replacing population answer distributions by finite-generation estimates.  The proof combines \eqref{eq:intro-sandwich} with a hyperplane-arrangement bound for the clean margin classes.
+Treating $K$, $A$, and the margin constants as fixed and suppressing logarithmic and confidence factors, the dependence on the two sample sizes is
+\begin{equation}
+\label{eq:intro-main-simplified}
+R(\widehat w_{\eps_N})-R(w^\star)
+=
+\widetilde O\bigl(\, Q^{-1/2}+N^{-\beta/2}\, \bigr).
+\end{equation}
+This bound already exhibits a fast-rate effect in $N$.  Although each clean margin is estimated at the usual $N^{-1/2}$ scale, the margin condition converts this estimation error into an excess-risk contribution of order $N^{-\beta/2}$.  The exponent $\beta$ is fixed as $N$ and $Q$ grow, but it may be arbitrarily large; consequently, this term can decay faster than $N^{-1/2}$, or even $N^{-1}$.  This does not contradict standard parametric estimation limits: the excess risk depends only on questions near the zero-margin boundary, and the margin condition makes such questions increasingly rare.
+
+The overall bound, of course, still contains the $Q^{-1/2}$ term.
+This raises the key optimality question: to what extent is the dependence on $(Q,N)$ in \eqref{eq:intro-main-simplified} intrinsic, and in particular can the $N^{-\beta/2}$ term be improved by pooling information across questions?
+
+\paragraph{A scalar model for the optimality question.}
+To investigate this question, we isolate the simplest nontrivial submodel: querying two models producing two possible answers each.  Because the answer set may depend on $q$, we may relabel the gold answer on every question as ``$\mathrm{gold}$'' and the other answer as ``$\mathrm{other}$'' without loss of generality, that is, $\mathcal A(q) = \{\mathrm{gold}, \mathrm{other}\}$ for all $q$ and $a^\star(q) = \mathrm{gold}$.  Let $Z_q\in[-1,1]$ be a latent \emph{signed advantage} and suppose
+\begin{equation}
+\label{eq:intro-antisymmetric}
+p_1(\mathrm{gold}\mid q)=\frac{1+Z_q}{2},
+\qquad
+p_2(\mathrm{gold}\mid q)=\frac{1-Z_q}{2}.
+\end{equation}
+For $w=(t,1-t)$, the clean margin is $(2t-1)Z_q$.  Thus every $t>1/2$ gives the same clean decisions: the ensemble is correct exactly when $Z_q>0$.  Every $t<1/2$ gives the opposite decisions and is correct exactly when $Z_q<0$, while $t=1/2$ ties on every question.  The learning problem therefore reduces to choosing between the two halves of the weight simplex, rather than estimating the magnitude of $t-1/2$.
+
+Let $G$ denote the distribution of $Z_q$ when $q\sim\calQ$, that is, the distribution induced by the map $q\mapsto Z_q$.  Write $\sigma=+1$ for the action of choosing any $t>1/2$ and $\sigma=-1$ for choosing any $t<1/2$, and let $R_+(G)$ and $R_-(G)$ denote their respective population risks.  Their difference is \ced{the linear functional measuring the imbalance of population mass across zero:}
+\begin{equation}
+\label{eq:intro-theta}
+R_-(G)-R_+(G)
+=
+\theta(G)
+:=
+\int\sgn(z)\,\dd G(z).
+\end{equation}
+Hence the sign of $\theta(G)$ determines which half of the simplex is optimal, and $|\theta(G)|$ is \ced{the excess risk, or regret, incurred by} choosing the wrong half.  Section~\ref{sec:scalar-model} gives the exact decision reduction; the minimax analysis below asks how well this sign can be learned from finite generations.
+
+The general multinomial observation also simplifies.  If $X_{1q}$ and $X_{2q}$ count the gold answers from the two models, then
+\[
+S_q:=X_{1q}+N-X_{2q}
+\]
+is sufficient for $Z_q$.  For the sampled questions, write $Z_j:=Z_{q_j}$ and $S_j:=S_{q_j}$.  The reduced experiment can then be written as
+\begin{equation}
+\label{eq:intro-binomial-channel}
+Z_1,\ldots,Z_Q\overset{\mathrm{iid}}{\sim}G,
+\qquad
+S_j\mid Z_j=z
+\sim
+\Bin\left(n,\frac{1+z}{2}\right),
+\quad j=1,\ldots,Q,
+\qquad n:=2N.
+\end{equation}
+Thus the raw generations first reduce to multinomial answer counts and then, under antisymmetry, to one binomial count per question.  We write $K_nG$ for the resulting marginal distribution of each $S_j$, where $K_n$ denotes the $n$-trial binomial channel.  The observed counts $S_1,\ldots,S_Q$ are iid from this nonparametric binomial-mixture distribution, and the ensemble problem has become indirect estimation of \eqref{eq:intro-theta} through the binomial channel.
+
+\paragraph{Scalar minimax characterization and explicit bounds.}
+On the two-sided margin class
+\[
+\calG_{\beta,L}
+=
+\{G:G([-t,t])\le Lt^\beta,\ 0<t\le1\},
+\]
+let $\calR^{\mathrm{dec}}_{Q,n}(\beta,L)$ denote the minimax expected regret for choosing between the two actions from $S_1,\ldots,S_Q$:
+\[
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+:=
+\inf_{\widehat\sigma}
+\sup_{G\in\calG_{\beta,L}}
+\E_G\!\left[
+\ced{|\theta(G)|
+\one\{\widehat\sigma\,\theta(G)<0\}}
+\right],
+\qquad \widehat\sigma\in\{-1,+1\}.
+\]
+Writing $h$ for Hellinger distance, define the indirect modulus
+\[
+\omega_{n,\beta,L}(\eps)
+:=
+\sup\left\{
+|\theta(G)-\theta(H)|:
+G,H\in\calG_{\beta,L},
+h(K_nG,K_nH)\le\eps
+\right\}.
+\]
+This is the largest ambiguity in $\theta$ among two mixing distributions whose observable count laws are within Hellinger distance $\eps$.  We prove %the constant-factor characterization
+\begin{equation}
+\label{eq:intro-modulus}
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\asymp
+\omega_{n,\beta,L}(Q^{-1/2}).
+\end{equation}
+This is a constant-factor characterization for every pair $(Q,n)$.  The observation map is noninjective: even with infinitely many questions, an $n$-trial binomial mixture reveals only the first $n$ moments of $G$.  We show that the resulting identification width is
+\begin{equation}
+\label{eq:intro-floor}
+\omega_{n,\beta,L}(0)
+\asymp
+n^{-\beta}.
+\end{equation}
+\ded{Thus, in the count-only experiment, every fixed finite $n=2N$ leaves an identification width of order $n^{-\beta}$ even as $Q\to\infty$.  A random-permutation embedding in \cref{thm:observed-transfer,cor:general-lower-transfer} shows that the same order is a uniform minimax lower bound when the questions themselves are observed, and hence for the unrestricted general ensemble class.}
+
+We also obtain a fully explicit finite-sample sandwich.  For constants depending only on the fixed margin parameters,
+\begin{equation}
+\label{eq:intro-explicit-lower}
+c\max\left\{
+Q^{-1/2},\,
+n^{-\beta},\,
+(Qn)^{-\beta/(\beta+2)}
+\right\}
+\le
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L).
+\end{equation}
+The first term is a \emph{hard-margin root-$Q$ obstruction}.  It already arises in a two-atom submodel supported on $Z\in\{-1,+1\}$, where every count is either $0$ or $n$ and the learner must detect an imbalance of order $Q^{-1/2}$ between the two question types.  The second term is the \emph{finite-generation identification floor} in \eqref{eq:intro-floor}, which arises in the count-only experiment because different mixing distributions can have identical moments through degree $n$ and hence identical observable count laws.  The third is an additional \emph{pooled rare-boundary obstruction}.  It can sharpen the explicit lower envelope in some intermediate scalings when $0<\beta<1$, but we do not have a matching upper bound for it; the construction is given in \cref{app:finite-lower}.  The transfer theorem \cref{thm:observed-transfer,cor:general-lower-transfer} shows that all three lower bounds remain valid when the learner observes the questions and in every larger unrestricted ensemble class containing the antisymmetric submodel.
+
+For the upper bound, we show
+\begin{equation}
+\label{eq:intro-explicit-upper}
+\begin{split}
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\le C\min\Biggl\{&
+Q^{-1/2}+n^{-\beta/2},\;
+%,\\[-0.25ex]
+%&
+\inf_{1\le d\le n}
+\left[
+d^{-\beta}
++
+\frac{\min\{B_0^d,\sqrt{n+1}\,\kappa_{d,n}\}}{\sqrt Q}
+\right]
+\Biggr\}.
+\end{split}
+\end{equation}
+Here $B_0=7.5$ is a universal constant and
+\[
+\kappa_{d,n}
+=
+\left[
+\prod_{r=0}^{d-1}\frac{n+r+2}{n-r}
+\right]^{1/2}.
+\]
+The infimum in \eqref{eq:intro-explicit-upper} has a bias--stability interpretation.  The degree $d$ controls the approximation error $d^{-\beta}$ for the \ced{discontinuous sign function}, while the second term controls the sampling instability of recovering the corresponding polynomial functional from $n$-trial binomial counts.  For $d\le n/2$, $\log\kappa_{d,n}\asymp d^2/n$, so the Bernstein--Durrmeyer term can improve the upper bound throughout the intermediate-$Q$ range, not only at the full-degree endpoint $d=n$.
+
+The first upper bound can be attained in the scalar model by a \emph{sign-then-aggregate} plug-in estimator: it replaces each count $S_j$ by the estimated sign $\sgn(S_j-n/2)$ and then chooses the majority side.  Thus each question is reduced to one noisy sign before information is aggregated across questions.  This is the scalar counterpart of the questionwise thresholding underlying buffered ERM; both procedures attain the same rate. %, although they are not literally the same estimator.
+
+The second upper bound is attained by a \emph{pooled polynomial-moment estimator}.  It chooses a polynomial $P_d$ approximating $\sgn$, uses the full count $S_j$ to estimate $P_d(Z_j)$ unbiasedly, and averages these estimates across questions.  It thus estimates the population functional without first assigning a sign to every question.  In this sense, the estimator performs a stable finite-dimensional inversion of the binomial channel and can pool weak distributional information that sign-then-aggregate discards.
+
+Fixing structural parameters (i.e., $\beta, L$, etc.) and suppressing logarithmic factors, the two endpoint regions in the $(Q,N)$ plane in which matching rates are proved are summarized below.
+\begin{center}
+\small
+\begin{tabular}{@{}L{0.18\linewidth}L{0.14\linewidth}L{0.31\linewidth}L{0.27\linewidth}@{}}
+\toprule
+Proved region & Minimax rate & Achieving procedure & Scope \\
+\midrule
+$Q\lesssim N^\beta$
+& $Q^{-1/2}$
+& Buffered ERM; in the scalar model, also sign-then-aggregate
+& General ensembles, up to logarithmic factors \\
+$Q\gtrsim 4^{2N}\operatorname{poly}(N)$
+& $N^{-\beta}$
+& Pooled polynomial-moment estimator
+& Matching upper bound proved for the scalar model \\
+\bottomrule
+\end{tabular}
+\end{center}
+The first endpoint is a general result: the buffered-ERM upper bound and the transferred hard-margin root-$Q$ lower bound match when $Q\lesssim N^\beta$.  At the other endpoint, the sufficient condition proved for the scalar estimator is $Q\gtrsim 4^{2N}(2N)^{2\beta+1/2}$.  The transferred $N^{-\beta}$ lower bound applies to larger unrestricted ensemble classes, but the matching polynomial-moment upper bound does not currently transfer.  Thus the $N^{-\beta/2}$ term in \eqref{eq:intro-main} is not a minimax floor when enough questions are available to pool weak distributional information, although the matching improvement is so far established only in the antisymmetric scalar model.
+
+\paragraph{A conjectured three-phase interpolation.}
+The factor $\kappa_{d,n}$ comes from an exact Bernstein--Durrmeyer spectral calculation.  It motivates the conjecture
+\[
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\asymp
+\inf_{1\le d\le n}
+\left\{
+d^{-\beta}
++
+\frac{\kappa_{d,n}}{\sqrt Q}
+\right\}.
+\]
+If true, this yields, away from the transition boundaries,
+\[
+\calR^{\mathrm{dec}}_{Q,n}
+\asymp
+\begin{cases}
+Q^{-1/2},
+&Q\lesssim n^\beta,\\[0.8ex]
+\bigl[n\log(Q/n^\beta)\bigr]^{-\beta/2},
+&n^\beta\ll Q\ll e^{cn},\\[0.8ex]
+n^{-\beta},
+&Q\gtrsim e^{cn}\operatorname{poly}(n).
+\end{cases}
+\]
+The first and third regimes are rigorous, with explicit sufficient conditions.  The intermediate formula is conjectural: proving it requires converting the Hilbert-space Durrmeyer spectrum into a worst-case variance or Hellinger stability theorem over the full margin class, together with a matching lower construction.
+
+The Hellinger characterization, the explicit upper and lower bounds, the two endpoint regimes, and the Durrmeyer spectral identity are rigorous.  The proposed spectral equivalence and its resulting middle phase are conjectural; the existing bounds do not yet close the intermediate regime.
+
+\section{Related work}
+
+\paragraph{Test-time sampling and aggregation.}
+Self-consistency selects the modal answer among sampled reasoning paths \citep{WangSelfConsistency}.  Verifier-guided sample-and-select procedures go back at least to the use of learned verifiers for mathematical reasoning \citep{CobbeVerifiers}.  Repeated-sampling studies separate candidate coverage from the ability to identify a correct candidate \citep{BrownMonkeys}.  Best-of-$\infty$ studies the infinite-sample majority-vote limit, adaptive stopping, and weighted multi-model ensembles learned by mixed-integer optimization \citep{KomiyamaBoInf}.  The present paper analyzes the statistical generalization of the weighted-ensemble component when both the benchmark and the empirical answer distributions are finite.  This differs from inference-time alignment with an imperfect reward model \citep{HuangBestN}, verifier transport geometry \citep{MukherjeeOT}, and pass@$k$ selection \citep{DiBestMajority}, although all of these works share the broader theme that additional generation is useful only when accompanied by a statistically reliable selection rule.
+
+\paragraph{Learning theory.}
+The general-$K$ argument is an empirical-process analysis of a finite-dimensional class of polytopal decision rules.  Its root-$Q$ term follows from a growth-function bound.  Our margin assumption is not the classical label-noise condition: it controls the stability of a fixed ensemble's answer ranking when its answer distributions are estimated from finitely many generations.
+
+\paragraph{Indirect functional estimation and binomial mixtures.}
+The scalar model is an indirect linear-functional problem over a convex set.  Hellinger moduli characterize minimax rates for linear functionals over convex models \citep{DonohoLiuII}; affine-observation versions admit near-minimax estimators constructed by convex programming \citep{JuditskyNemirovski}.  Finite binomial mixtures reveal finitely many moments of the mixing distribution, and recent work studies exact confidence sets for binomial mixing distributions and their functionals \citep{BasuBinomial}.  Our $N^{-\beta}$ identification bound uses weighted approximation of the sign function under a power weight.  The only specialized approximation-theory input is a matching direct/inverse theorem for doubling weights with an internal zero or singularity \citep{Kopotun}.  The spectral refinement uses classical Bernstein--Durrmeyer operators \citep{DurrmeyerSpectral}.
+
+\section{General weighted-ensemble model}
+\label{sec:general-model}
+
+We retain the notation $p_i$, $p_w$, $M_q$, and $w^\star$ from the introduction.  Write $[m]=\{1,\dots,m\}$ and $\Delta_K:=\{w\in\R_+^K:\sum_{i=1}^K w_i=1\}$.  We assume throughout that $a^\star(q)\in\calA(q)$ and $2\le |\calA(q)|\le A<\infty$.  For later reference, define the per-question clean loss
+\begin{equation}
+\label{eq:clean-loss-risk}
+\ell_q(w)=\one\{M_q(w)\le0\},
+\qquad
+R(w)=\E_{q\sim\calQ}\ell_q(w)
+=\Pp_{q\sim\calQ}\{M_q(w)\le0\}.
+\end{equation}
+
+\ded{We model questions as elements of a standard Borel question-instance space $(\mathcal X,\mathscr X)$ and assume that the population distribution $\calQ$ is nonatomic.  Thus independently sampled questions are distinct almost surely, formalizing a fresh-question design with exactly $N$ generations per model and question.  Nonatomicity also prevents exact repetitions from creating extra within-question information: if the same question appeared $r$ times, its $r$ generation streams could be pooled into the equivalent of $rN$ generations from each model.}
+
+The observed data consist of the labeled questions and the raw generations
+\begin{equation}
+\label{eq:training-data}
+\mathcal S_{Q,N}
+:=
+\left\{
+\left(q_j,a^\star(q_j),
+(Y_{j,i,r})_{(i,r)\in[K]\times[N]}
+\right):j\in[Q]
+\right\}.
+\end{equation}
+Here $q_1,\dots,q_Q\overset{\mathrm{iid}}{\sim}\calQ$, and, conditional on the questions, the variables
+\[
+Y_{j,i,r}\sim p_i(\cdot\mid q_j),
+\qquad
+(j,i,r)\in[Q]\times[K]\times[N],
+\]
+are independent.  For each question and model, reduce these raw generations to the answer counts
+\[
+X_{j,i,a}
+:=
+\sum_{r=1}^N\one\{Y_{j,i,r}=a\},
+\qquad
+X_{j,i}:=(X_{j,i,a}:a\in\calA(q_j)).
+\]
+Then
+\begin{equation}
+\label{eq:count-model}
+X_{j,i}\mid q_j\sim
+\operatorname{Multinomial}\bigl(N,p_i(\cdot\mid q_j)\bigr),
+\qquad (j,i)\in[Q]\times[K],
+\end{equation}
+and $\widehat p_i(\cdot\mid q_j)=X_{j,i}/N$.  The counts are sufficient for the answer distributions, so all subsequent procedures may be expressed in terms of $X_{j,i}$ rather than the ordered raw generations.  Define the empirical ensemble distribution and margin by
+\[
+\widehat p_w(a\mid q_j)
+:=
+\sum_{i=1}^K w_i\widehat p_i(a\mid q_j),
+\qquad
+\widehat M_{q_j}(w)
+:=
+\widehat p_w(a^\star(q_j)\mid q_j)
+-\max_{a\ne a^\star(q_j)}\widehat p_w(a\mid q_j).
+\]
+The empirical answer distributions $\widehat p_i(\cdot\mid q_j)$ are observable and therefore make $\widehat M_{q_j}(w)$ computable for any $w$; the corresponding clean margin $M_{q_j}(w)$ is not observed.  The target $R(w)$ is defined by these clean margins and the population distribution of questions.  Thus the analysis must account both for generalization across the $Q$ questions and for estimation of each question's margin from $N$ generations.
+
+\section{Buffered empirical risk minimization}
+\label{sec:buffered}
+
+\subsection{Estimator}
+
+Raw ERM minimizes the number of training questions with nonpositive empirical margin.  It can exploit weights for which a question appears solved only because of a favorable finite-$N$ fluctuation.  We instead define, for a buffer $\eps>0$,
+\begin{equation}
+\label{eq:buffered-risk}
+\widehat R_\eps(w)
+:=
+\frac1Q\sum_{j=1}^Q\one\{\widehat M_{q_j}(w)\le\eps\}.
+\end{equation}
+Because $\widehat R_\eps$ takes values in the finite set $\{0,Q^{-1},\dots,1\}$, its minimum is attained.  Let
+\begin{equation}
+\label{eq:buffered-erm}
+\widehat w_\eps
+\in
+\argmin_{w\in\Delta_K}\widehat R_\eps(w).
+\end{equation}
+
+For a confidence level $\delta\in(0,1)$, choose the buffer to be
+\begin{equation}
+\label{eq:epsilon-N}
+\eps_N
+:=
+\sqrt{\frac{2\log(8KAQ/\delta)}{N}}.
+\end{equation}
+The logarithm comes from requiring uniform control over all training questions, models, and candidate answers.  The key is the $N^{-1/2}$ scale.
+
+\begin{assumption}[One-sided comparator margin]
+\label{ass:one-sided-margin}
+There are constants $C_m>0$, $\beta>0$, and $t_0>0$ such that
+\begin{equation}
+\label{eq:one-sided-margin}
+\Pp\{0<M_q(w^\star)\le t\}
+\le C_m t^\beta,
+\qquad 0<t\le t_0.
+\end{equation}
+\end{assumption}
+
+The assumption controls the questions that $w^\star$ solves with only a small winning margin.  No margin condition is imposed at the data-dependent estimator.  Define
+\begin{equation}
+\label{eq:vq}
+\mathfrak v_Q(\delta)
+:=
+C_0
+\sqrt{
+\frac{(K-1)\log(eAQ)+\log(1/\delta)}{Q}
+},
+\end{equation}
+where $C_0$ is a universal constant.
+
+\begin{theorem}[Buffered ERM]
+\label{thm:buffered-main}
+Assume \cref{ass:one-sided-margin}, let $\eps_N$ be given by \eqref{eq:epsilon-N}, and suppose $2\eps_N\le t_0$.  Let $\widehat w_{\eps_N}$ be any minimizer in \eqref{eq:buffered-erm}.  Then, with probability at least $1-\delta$ over both sources of randomness,
+\begin{equation}
+\label{eq:buffered-bound-exact}
+R(\widehat w_{\eps_N})-R(w^\star)
+\le
+2\mathfrak v_Q(\delta)
++C_m(2\eps_N)^\beta.
+\end{equation}
+Consequently,
+\begin{equation}
+\label{eq:buffered-bound-rate}
+R(\widehat w_{\eps_N})-R(w^\star)
+\lesssim
+\sqrt{\frac{K\log(AQ)+\log(1/\delta)}{Q}}
++
+C_m\left(\frac{\log(KAQ/\delta)}{N}\right)^{\beta/2}.
+\end{equation}
+\end{theorem}
+
+The first term in \eqref{eq:buffered-bound-rate} is the cost of generalizing across questions; the second is the cost of estimating their clean margins from finite generations.  The proof formalizes the buffered sandwich already displayed in \eqref{eq:intro-sandwich} and combines it with a hyperplane-arrangement bound for the clean loss classes.  The concentration and capacity lemmas, followed by the short proof of \cref{thm:buffered-main}, are deferred to \cref{app:buffered-proof}.
+
+\begin{remark}[Why the buffer is useful]
+The theorem does not require a margin condition at the random, data-dependent $\widehat w_{\eps_N}$.  An unbuffered proof would need to control finite-generation sign corruption uniformly over weights that the optimization might select.  The buffer instead converts empirical feasibility into clean feasibility and pays for a narrow band only at the fixed comparator.
+\end{remark}
+
+\begin{remark}[Computation]
+For fixed $\eps$, the buffered objective is piecewise constant on the arrangement of the empirical hyperplanes
+\[
+\widehat p_w(a^\star(q_j)\mid q_j)
+-\widehat p_w(a\mid q_j)
+=\eps,
+\qquad a\ne a^\star(q_j).
+\]
+It can be optimized by the same mixed-integer formulation used for weighted Best-of-$\infty$, with the right-hand side shifted by $\eps$.  If a numerical solver returns $\widetilde w_\eps$ satisfying
+\[
+\widehat R_\eps(\widetilde w_\eps)
+\le
+\inf_{w\in\Delta_K}\widehat R_\eps(w)+\eta,
+\]
+the same proof adds only $\eta$ to \eqref{eq:buffered-bound-exact}.  Thus a computational tolerance no larger than the statistical bound in \eqref{eq:buffered-bound-rate} does not change the rate.
+\end{remark}
+
+\section{A scalar antisymmetric two-model core}
+\label{sec:scalar-model}
+
+Buffered ERM thresholds the empirical margin of each training question before averaging across questions.  To ask whether weaker finite-generation evidence can instead be pooled across questions, we now study a submodel in which the global statistical target becomes one-dimensional and can be analyzed sharply.
+
+\subsection{Model and exact decision reduction}
+
+There are two models and two answers \aed{$\{\mathrm{gold}, \mathrm{other}\}$}.  Each question $q$ has a latent signed advantage $Z_q\in[-1,1]$ and
+\begin{equation}
+\label{eq:antisymmetric}
+p_1(\mathrm{gold}\mid q)=\frac{1+Z_q}{2},
+\qquad
+p_2(\mathrm{gold}\mid q)=\frac{1-Z_q}{2}.
+\end{equation}
+Let $G$ denote the distribution of $Z_q$ when $q\sim\calQ$.  It is a probability measure supported on $[-1,1]$.
+%Let $G$ be the population distribution of $Z_q$.  
+An ensemble weight \aed{can be parameterized by a single parameter as} $w=(t,1-t)$ with $0\le t\le1$. \aed{In the two-answer case, 
+the (clean) margin of the ensemble  is the same weighted average of the models' individual margins.}
+%Since the gold-versus-wrong gap of
+\aed{Since the margin of model 1} is $Z_q$ and that of model 2 is $-Z_q$, \aed{the ensemble margin is}
+\begin{equation}
+\label{eq:scalar-margin}
+%M_q(t)
+\aed{M_q(w) = t(Z_q) + (1-t)(-Z_q)
+=} (2t-1)Z_q.
+\end{equation}
+
+Recalling the definition of the clean risk in \eqref{eq:clean-loss-risk}, we have
+\[
+R(w)=\int\one\{(2t-1)z\le0\}\,\dd G(z).
+\]
+Here and throughout, $\sgn(z)=\one\{z>0\}-\one\{z<0\}$, so that $\sgn(0)=0$.  The following lemma formalizes that there are essentially two decision rules to consider.
+
+\begin{lemma}[Only the side of one half matters]
+\label{lem:side}
+%Assume $G(\{0\})=0$ and define
+\aed{Define}
+\begin{equation}
+\label{eq:theta}
+\theta(G)
+:=
+\int_{-1}^1\sgn(z)\,\dd G(z)
+=
+G((0,1])-G([-1,0)).
+\end{equation}
+Every $t>1/2$ has risk \aed{$G([-1,0])$}, every $t<1/2$ has risk \aed{$G([0,1])$}, and $t=1/2$ has risk one.  Hence the optimal side is the sign of $\theta(G)$ when $\theta(G)\ne0$; when $\theta(G)=0$, the two sides have equal risk.  Choosing the wrong side incurs excess risk $|\theta(G)|$.
+\end{lemma}
+
+\begin{proof}
+The stated risks for the three decisions $t>1/2$ (the $+$ decision), $t<1/2$ (the $-$ decision), and $t=1/2$ follow from~\eqref{eq:scalar-margin}.  The decision $t=1/2$ is weakly dominated.  Moreover,
+\[
+R(-)-R(+)
+=G([0,1])-G([-1,0])
+=G((0,1])-G([-1,0))
+=\theta(G),
+\]
+where the mass at zero cancels.  Thus, when $\theta(G)>0$, the $+$ decision is optimal and choosing $-$ incurs excess risk $\theta(G)=|\theta(G)|$.  The case $\theta(G)<0$ is similar, while the two decisions have equal risk when $\theta(G)=0$.
+
+%the loss is $\one\{Z_q\le0\}$ when $t>1/2$, $\one\{Z_q\ge0\}$ when $t<1/2$, and one when $t=1/2$.  Since $G(\{0\})=0$, the stated risks follow, and their difference is $G((0,1])-G([-1,0))=\theta(G)$.}
+\end{proof}
+
+Thus, after excluding the weakly dominated choice $t=1/2$, the ensemble problem is to choose a side $\widehat\sigma\in\{-1,+1\}$.  The $+$ side is optimal when $\theta(G)>0$, the $-$ side is optimal when $\theta(G)<0$, and either side is optimal when $\theta(G)=0$.  %The excess-risk loss of 
+
+\aed{The loss producing the regret (i.e. excess-risk)} of a decision rule $\widehat\sigma$ is
+\begin{equation}
+\label{eq:scalar-decision-loss}
+\ced{\mathcal L_G(\widehat\sigma)
+:=
+|\theta(G)|\,
+\one\{\widehat\sigma\,\theta(G)<0\}.}
+\end{equation}
+\ced{In particular, the loss is zero when $\theta(G)=0$, because the two sides then have equal risk.}
+
+\ced{Although the original ensemble problem only requires choosing a side, it will be useful to consider the companion problem of estimating $\theta(G)$ under absolute-error loss.  Given any real-valued estimator $\widehat\theta$, let its induced decision be $\widehat\sigma(\widehat\theta)=+1$ when $\widehat\theta\ge0$ and $-1$ otherwise.}
+\ced{Then, for every $G$,}
+\begin{equation}
+\label{eq:pointwise-decision-reduction}
+\ced{\mathcal L_G\bigl(\widehat\sigma(\widehat\theta)\bigr)
+\le
+|\widehat\theta-\theta(G)|.}
+\end{equation}
+Indeed, the left-hand side is zero when $\theta(G)=0$; otherwise, whenever the induced decision chooses the wrong side, $\widehat\theta$ lies on the opposite side of zero from $\theta(G)$.  \ced{Thus any absolute-error bound for $\widehat\theta$ is also an upper bound on the regret of the induced decision rule.}  %The target $\theta(G)$ is a linear functional measuring the imbalance of population mass on the two sides of zero.}
+
+\subsection{What the generations reveal}
+
+\ced{We now formalize the reduced binomial-mixture experiment previewed in \eqref{eq:intro-binomial-channel}.  Let $X_{1q}$ and $X_{2q}$ be the numbers of gold answers among the $N$ generations of models 1 and 2 on question $q$.  Conditional on $Z_q=z$,}
+\[
+\ced{X_{1q}\sim\Bin\left(N,\frac{1+z}{2}\right),
+\qquad
+X_{2q}\sim\Bin\left(N,\frac{1-z}{2}\right),
+\quad\text{independently}.}
+\]
+\ced{Define}
+\begin{equation}
+\label{eq:S-stat}
+\ced{S_q:=X_{1q}+N-X_{2q}.}
+\end{equation}
+\ced{The joint likelihood of $(X_{1q},X_{2q})$ depends on $z$ only through $S_q$, so $S_q$ is sufficient for $z$ in this antisymmetric experiment.  For the sampled questions, write $Z_j:=Z_{q_j}$ and $S_j:=S_{q_j}$, and set $n:=2N$.  The complete hierarchical model is}
+\begin{equation}
+\label{eq:scalar-reduced-experiment}
+\ced{Z_1,\dots,Z_Q\overset{\mathrm{iid}}{\sim}G,
+\qquad
+S_j\mid Z_j=z
+\sim
+\Bin\left(n,\frac{1+z}{2}\right),
+\quad j=1,\dots,Q,}
+\end{equation}
+\ced{By sufficiency, the raw pair of model counts can be reduced to $S_j$ conditional on the observed question $q_j$, so the full antisymmetric data reduce to $((q_j,S_j))_{j=1}^Q$.  Passing from these pairs to $S_1,\dots,S_Q$ alone is an additional observation coarsening.  We analyze the resulting count-only experiment first and prove in \cref{sec:observed-transfer} that its minimax lower bounds transfer, up to universal constants, to a fully nonparametric observed-question model.}
+
+\ced{For $k=0,\dots,n$, let $b_{k,n}(p):=\binom nkp^k(1-p)^{n-k}$ denote the $k$th Bernstein basis polynomial of degree $n$.  Let $K_nG$ denote the marginal law of $S_j$ after mixing over $Z_j\sim G$.  As usual on a finite sample space, we identify this distribution with its pmf, so that}
+\begin{equation}
+\label{eq:KnG}
+\ced{(K_nG)(k)
+=
+\int_{-1}^1
+b_{k,n}\left(\frac{1+z}{2}\right)
+\dd G(z),
+\qquad k=0,\dots,n.}
+\end{equation}
+\ced{This is the nonparametric $n$-trial binomial-mixture distribution with mixing law $G$.  Equivalently, the marginal observation model is}
+\begin{equation}
+\label{eq:scalar-marginal-experiment}
+\ced{S_1,\dots,S_Q\overset{\mathrm{iid}}{\sim}K_nG.}
+\end{equation}
+From these observations, the goal is either to estimate $\theta(G)$ in absolute error or \aed{decide its sign}. %to choose the optimal side.
+
+\ced{More precisely, $K_n$ is the Markov kernel from $[-1,1]$ to $\{0,\dots,n\}$ that assigns to each $z$ the distribution $\Bin(n,(1+z)/2)$; we refer to it as the $n$-trial binomial channel.  We use the same notation for the induced map on probability measures, so that $K_nG$ is the output distribution when the input $Z$ has distribution $G$, as displayed in~\eqref{eq:KnG}.  Thus~\eqref{eq:scalar-marginal-experiment} can be viewed as observing the infinite-dimensional mixing distribution $G$ through the binomial channel.  The following lemma describes an inherent limitation of this channel: it reveals only the first $n$ moments of $G$.}
+
+\begin{lemma}%[The binomial channel reveals exactly the first $n$ moments]
+\label{lem:moment-equivalence}
+\ced{For probability measures $G,H$ on $[-1,1]$, the following are equivalent:}
+\begin{enumerate}[label=(\alph*)]
+\item \ced{$K_nG=K_nH$;}
+\item \ced{$\int P\,\dd G=\int P\,\dd H$ for every algebraic polynomial $P$ of degree at most $n$;}
+\item \ced{$\int z^j\,\dd G(z)=\int z^j\,\dd H(z)$ for $j=0,\dots,n$.}
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Equality of $K_nG$ and $K_nH$ is equivalent to equality of the integrals of $b_{k,n}((1+z)/2)$ for $k=0,\dots,n$.  The Bernstein polynomials form a basis for the polynomials of degree at most $n$ in $p$, and composition with the invertible affine map $p=(1+z)/2$ gives a basis for the polynomials of degree at most $n$ in $z$. \aed{Monomials $z^j, j=0,\dots,n$ form another basis.}
+%This proves the equivalence with equality of the moments of orders $0,\dots,n$.
+\end{proof}
+
+In the count-only experiment, letting $Q\to\infty$ identifies only $K_nG$, equivalently the first $n$ moments of $G$.  Consequently, the count-only observations need not identify $G$, or even $\theta(G)$.  This is the source of the finite-generation identification floor quantified below.  The observed-question experiment requires a separate minimax transfer argument.
+
+\begin{remark}[Observed questions versus count-only observations]
+The hierarchy in \eqref{eq:scalar-reduced-experiment} is the exact exchangeable random-effects representation induced by sampling questions from the population.  Marginalizing the question identities gives \eqref{eq:scalar-marginal-experiment}, but this marginalization is not automatically valid for lower bounds because an estimator in the original problem observes $q_j$.  In \cref{sec:observed-transfer} we close this gap: a random-permutation embedding, supported on deterministic question-to-advantage maps, proves that the count-only and fully observed minimax risks are equivalent up to universal constants over the unrestricted nonparametric class.
+\end{remark}
+
+\section{Scalar minimax theory}
+\label{sec:scalar-minimax}
+
+\eed{The preceding section reduced the antisymmetric two-model problem to observing \aed{independent draws} $S_1,\dots,S_Q$ %independently
+from the binomial-mixture %law
+$K_nG$, with the goal of determining the sign of $\theta(G)$.  We now study the minimax difficulty of this decision problem under a two-sided margin condition on $G$.
+
+We begin by showing that the Hellinger modulus of the binomial channel characterizes the minimax decision risk up to universal constants.  We then derive explicit lower and upper bounds, identifying two regimes in which the rates match: a question-limited regime, where the buffered plug-in rule is optimal at the root-$Q$ rate, and an identification-limited regime, where moment nonidentifiability imposes an $n^{-\beta}$ floor.  The remaining gap between these regimes motivates the spectral conjecture developed in the next section.}
+
+\subsection{Margin class and minimax risks}
+
+Fix $\beta>0$ and $L\ge1$.  Define the two-sided margin class
+\begin{equation}
+\label{eq:Gclass}
+\calG_{\beta,L}
+:=
+\left\{
+G\in\mathcal P([-1,1]):
+G([-t,t])\le Lt^\beta
+\text{ for every }0<t\le1
+\right\}.
+\end{equation}
+The condition implies $G(\{0\})=0$.  It is stronger than the one-sided comparator condition used in \cref{thm:buffered-main}; the symmetry is convenient for the minimax identification problem.
+
+For decision rules $\widehat\sigma\in\{-1,+1\}$ based on $S_1,\dots,S_Q$, define the minimax decision risk
+\begin{equation}
+\label{eq:minimax-decision}
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+:=
+\inf_{\widehat\sigma}
+\sup_{G\in\calG_{\beta,L}}
+\E_G\mathcal L_G(\widehat\sigma).
+\end{equation}
+For estimators $\widehat\theta$ based on the same observations, define the minimax absolute-error risk
+\[
+\calR^{\mathrm{abs}}_{Q,n}(\beta,L)
+:=
+\inf_{\widehat\theta}
+\sup_{G\in\calG_{\beta,L}}
+\E_G|\widehat\theta-\theta(G)|.
+\]
+\ced{The pointwise reduction \eqref{eq:pointwise-decision-reduction} shows that}
+\begin{equation}
+\label{eq:dec-le-abs}
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\le
+\calR^{\mathrm{abs}}_{Q,n}(\beta,L).
+\end{equation}
+
+\subsection{Exact characterization by the Hellinger modulus}
+
+\eed{For two probability vectors $p,q$ on $\{0,\dots,n\}$, let
+$h^2(p,q)=\sum_{k=0}^n(\sqrt{p_k}-\sqrt{q_k})^2$
+denote their squared Hellinger distance.}
+Define the indirect \aed{Hellinger} modulus
+\begin{equation}
+\label{eq:modulus}
+\omega_{n,\beta,L}(\eps)
+:=
+\sup\bigl\{
+|\theta(G)-\theta(H)|:\;
+G,H\in\calG_{\beta,L},
+\ h(K_nG,K_nH)\le\eps
+\bigr\}.
+\end{equation}
+This is the largest ambiguity in the target among latent distributions whose observable count laws are $\eps$-indistinguishable.
+
+We use the classical Hellinger-modulus theorem for linear functionals over compact convex models \citep{DonohoLiuII,JuditskyNemirovski}.  The map
+\[
+G\mapsto(K_nG,\theta(G))
+\]
+is affine, and it need not be injective in the first coordinate.
+
+\begin{theorem}[Scalar minimax characterization]
+\label{thm:scalar-modulus}
+There are universal constants $0<c<C<\infty$ such that, for every $Q,n\ge1$,
+\begin{equation}
+\label{eq:scalar-modulus-chain}
+c\,\omega_{n,\beta,L}(Q^{-1/2})
+\le
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\le
+\calR^{\mathrm{abs}}_{Q,n}(\beta,L)
+\le
+C\,\omega_{n,\beta,L}(Q^{-1/2}).
+\end{equation}
+\end{theorem}
+
+\eed{The imported Hellinger-modulus theorem naturally evaluates $\omega_{n,\beta,L}$ at fixed numerical multiples of $Q^{-1/2}$.  A scaling property proved in \cref{app:scalar-modulus} absorbs those multiples into the universal constants in \eqref{eq:scalar-modulus-chain}.  The upper bound permits several values of $\theta$ to correspond to the same observable count law.  For the lower decision bound, an arbitrary modulus pair may have target values with the same sign and hence the same optimal decision; a reflection symmetrization turns it into an equally indistinguishable pair with opposite optimal decisions.  The complete argument is given in \cref{app:scalar-modulus}.}
+
+\aed{Theorem~\ref{thm:scalar-modulus} characterizes the minimax decision
+regret in the scalar model, uniformly over $Q,n\ge1$, up to universal
+constant factors:
+\begin{equation}
+\label{eq:scalar-modulus-succinct}
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\asymp
+\omega_{n,\beta,L}(Q^{-1/2}),
+\end{equation}
+Thus the statistical problem reduces to understanding the modulus at
+resolution $Q^{-1/2}$.  Because this modulus does not itself display the
+dependence on $Q$ and $n$, we next derive explicit bounds and identify
+regimes in which they match.}
+
+
+\subsection{The \texorpdfstring{$Q=\infty$}{Q=infinity} identification floor}
+
+\eed{We first consider the implication of \cref{thm:scalar-modulus} in the limit $Q\to\infty$.  As the statistical resolution $Q^{-1/2}$ vanishes, the relevant quantity becomes the zero-radius modulus $\omega_{n,\beta,L}(0)$.  By \cref{lem:moment-equivalence}, equality of the observable laws $K_nG=K_nH$ is equivalent to equality of the moments through degree $n$.  Thus $\omega_{n,\beta,L}(0)$ measures the remaining ambiguity in $\theta(G)$ when those moments are known exactly.  The next theorem evaluates this identification width sharply.}
+
+\begin{theorem}[Sharp identification floor]
+\label{thm:identification-floor}
+For every fixed $\beta>0$ and $L\ge1$, there are constants $0<c_{\beta,L}<C_{\beta,L}<\infty$ such that
+\begin{equation}
+\label{eq:identification-floor}
+ c_{\beta,L}n^{-\beta}
+\le
+\omega_{n,\beta,L}(0)
+\le
+C_{\beta,L}n^{-\beta}
+\qquad\text{for every }n\ge1.
+\end{equation}
+Consequently,
+\begin{equation}
+\label{eq:N-only-lower}
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\ge c_{\beta,L}n^{-\beta}
+\qquad\text{for every }Q.
+\end{equation}
+Since $n=2N$, the finite-generation identification floor is $\Theta(N^{-\beta})$.
+\end{theorem}
+
+\eed{Once~\eqref{eq:identification-floor} is established, the minimax consequence~\eqref{eq:N-only-lower} follows directly from \cref{thm:scalar-modulus} and monotonicity of the modulus: $\calR^{\mathrm{dec}}_{Q,n}(\beta,L)\gtrsim\omega_{n,\beta,L}(Q^{-1/2})\ge\omega_{n,\beta,L}(0)\gtrsim_{\beta,L}n^{-\beta}$.}
+
+\eed{The proof of~\eqref{eq:identification-floor} draws on polynomial approximation \aed{ideas}.  The upper bound uses a degree-$n$ polynomial $P_n$, obtained from a localized Jackson-kernel construction, satisfying}
+\[
+|P_n(z)-\sgn(z)|
+\lesssim_s
+\min\{1,(n|z|)^{-s}\},
+\qquad \norm{P_n}_\infty\le1,
+\]
+with $s>\beta$. Integrating over the margin class gives uniform error $O(n^{-\beta})$.  Moment-equivalent distributions integrate $P_n$ equally.
+
+For the lower bound, let
+\[
+\mu_\beta(\dd z)
+=
+\frac\beta2|z|^{\beta-1}\one_{[-1,1]}(z)\,\dd z.
+\]
+\eed{Writing $\Pi_n$ for the space of real algebraic polynomials of degree at most $n$, a classical matching direct/inverse approximation theorem gives}
+\begin{equation}
+\label{eq:weighted-L1}
+E_n(\beta)
+:=
+\inf_{P\in\Pi_n}
+\int|\sgn(z)-P(z)|\,\dd\mu_\beta(z)
+\asymp_\beta n^{-\beta}.
+\end{equation}
+\eed{The $L_1$ analogue of linear-programming duality provides an odd function $h_n$ with $\norm{h_n}_\infty\le1$ that annihilates $\Pi_n$ and attains the approximation error \aed{$E_n(\beta)$}.  The measures
+\[
+\dd G_{n,+}=(1+h_n)\dd\mu_\beta,
+\qquad
+\dd G_{n,-}=(1-h_n)\dd\mu_\beta
+\]
+form a reflected pair of probability measures with identical moments through degree $n$ and targets separated by $2E_n(\beta)\asymp n^{-\beta}$.  Mixing both with the same symmetric measure on $\{-1,+1\}$ places them in $\calG_{\beta,L}$ while preserving moment matching and the order of the target separation.  The resulting pair induces the same binomial-mixture law.  Full proofs, including the localized Jackson construction, the weighted inverse argument, and the dual moment-matching construction, are in \cref{app:identification}.}
+
+
+
+\subsection{Finite-\texorpdfstring{$Q$}{Q} lower bounds}
+
+\eed{The modulus characterization also isolates two distinct finite-sample obstructions.  The first is ordinary population uncertainty: even when every latent advantage is separated from zero, $Q$ questions reveal their population imbalance only at the root-$Q$ scale.}
+
+\begin{proposition}[Hard-margin root-$Q$ lower bound]
+\label{thm:rootQ-scalar}
+For every $n\ge1$, $\beta>0$, $L\ge1$, and $0<\eps\le1$,
+\begin{equation}
+\label{eq:rootQ-modulus}
+\omega_{n,\beta,L}(\eps)\ge\eps.
+\end{equation}
+Consequently, for every $Q,n\ge1$,
+\begin{equation}
+\label{eq:rootQ-scalar}
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\ge cQ^{-1/2}
+\end{equation}
+for a universal constant $c>0$.  Both claims hold on a two-atom subclass supported on $Z\in\{-1,+1\}$ and therefore under a hard margin.
+\end{proposition}
+
+Indeed, under
+\[
+G_{\sigma,\eta}
+=
+\frac{1+\sigma\eta}{2}\delta_{+1}
++
+\frac{1-\sigma\eta}{2}\delta_{-1},
+\qquad \sigma\in\{-1,+1\},
+\]
+every observed count is deterministically $0$ or $n$.  The two output laws differ only through the population imbalance, and their Hellinger distance is of order $\eta$, while their targets differ by $2\eta$.  Thus finite-generation noise plays no role.  The exact modulus calculation is given in \cref{app:finite-lower}.
+
+\eed{A second finite-sample obstruction places a small fraction of the population near the decision boundary, with a common orientation that can be detected only by pooling their weak count evidence.}
+
+\begin{theorem}[Pooled rare-boundary lower bound]
+\label{thm:pooled-lower}
+For every fixed $\beta>0$ and $L\ge1$, there are constants $c_0,c_1>0$ such that, for every $n\ge1$ and $0<\eps\le c_0$,
+\begin{equation}
+\label{eq:pooled-modulus-lower}
+\omega_{n,\beta,L}(\eps)
+\ge
+c_1\left(\frac{\eps^2}{n}\right)^{\beta/(\beta+2)}.
+\end{equation}
+Consequently, there is a constant $c_{\beta,L}>0$ such that
+\begin{equation}
+\label{eq:pooled-lower}
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\ge
+c_{\beta,L}(Qn)^{-\beta/(\beta+2)}
+\end{equation}
+for every $Q,n\ge1$.
+\end{theorem}
+The construction and its Hellinger calculation are given in \cref{app:finite-lower}.
+
+This lower bound describes a shared weak orientation among a rare set of near-boundary questions; unlike sign-then-aggregate, the optimal test for this pair pools the weak count information.
+
+\begin{corollary}[Explicit scalar lower envelope]
+\label{cor:explicit-lower-envelope}
+For every fixed $\beta>0$ and $L\ge1$, there is a constant $c_{\beta,L}>0$ such that
+\begin{equation}
+\label{eq:explicit-lower-envelope}
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\ge
+c_{\beta,L}
+\max\left\{
+Q^{-1/2},\,
+n^{-\beta},\,
+(Qn)^{-\beta/(\beta+2)}
+\right\}
+\end{equation}
+for every $Q,n\ge1$.
+\end{corollary}
+
+A comparison of the three terms shows that the pooled rare-boundary bound can dominate both $Q^{-1/2}$ and $n^{-\beta}$ only when $0<\beta<1$, in the intermediate range
+\[
+n^{2\beta/(2-\beta)}
+\lesssim Q
+\lesssim n^{\beta+1}.
+\]
+No matching upper bound is currently known for this term, so it does not define either of the two rigorous endpoint regimes established below.
+
+\subsection{Observed questions and minimax transfer}
+\label{sec:observed-transfer}
+
+The count-only experiment in \eqref{eq:scalar-marginal-experiment} deliberately discards the question identities.  This is harmless for upper bounds, because a procedure in the original experiment can always ignore the questions.  It is not harmless for lower bounds: an estimator that observes $q_j$ may try to infer the latent advantage $Z(q_j)$ from the question itself.  We now show that, in a fully nonparametric observed-question model, this extra information does not improve the minimax rate.  The proof embeds an arbitrary scalar hard pair into deterministic question-to-advantage maps and randomizes only the assignment of their latent advantages to otherwise uninformative question cells.
+
+\aed{We assume the questions are drawn from a general \emph{nonatomic} measure $\calQ$; see~\cref{rem:nonatomic} for why this makes sense as a modeling device for this problem and potential alternative models.}
+\ded{Every nonatomic standard probability space is measure-isomorphic modulo null sets to the Lebesgue unit interval.  We therefore use the canonical representation $([0,1],\mathcal B,\lambda)$ for the transfer argument.  This representation imposes no ordering or geometric structure on the questions: the advantage map remains an arbitrary measurable function.}  Let
+\[
+\mathfrak Z_{\beta,L}
+:=
+\{Z:[0,1]\to[-1,1]\text{ measurable}:Z_\#\lambda\in\calG_{\beta,L}\},
+\]
+where $Z_\#\lambda$ is the pushforward law of $Z(q)$ for $q\sim\lambda$.  For $Z\in\mathfrak Z_{\beta,L}$, the observed-question antisymmetric experiment is
+\begin{equation}
+\label{eq:full-observed-scalar}
+q_1,\dots,q_Q\overset{\mathrm{iid}}{\sim}\lambda,
+\qquad
+S_j\mid q_j
+\sim
+\Bin\!\left(n,\frac{1+Z(q_j)}2\right),
+\quad j=1,\dots,Q.
+\end{equation}
+The estimator sees the full pairs $(q_j,S_j)$.  Define
+\[
+\theta_Z
+:=
+\int_0^1\sgn(Z(q))\,\dd q
+=
+\theta(Z_\#\lambda)
+\]
+and
+\begin{equation}
+\label{eq:minimax-observed}
+\calR^{\mathrm{obs}}_{Q,n}(\beta,L)
+:=
+\inf_{\widehat\sigma}
+\sup_{Z\in\mathfrak Z_{\beta,L}}
+\E_Z\!\left[
+|\theta_Z|\,
+\one\{\widehat\sigma\theta_Z<0\}
+\right],
+\end{equation}
+where the infimum ranges over all, possibly randomized, rules based on $((q_j,S_j))_{j=1}^Q$.  The raw pair of model counts may be used instead of $S_j$ without changing the experiment, because $S_j$ is sufficient conditional on $q_j$ in the antisymmetric family.
+
+Every count-only rule is admissible in \eqref{eq:minimax-observed}.  Moreover, every $G\in\calG_{\beta,L}$ can be realized as $Z_\#\lambda$ by a quantile map.  Hence
+\begin{equation}
+\label{eq:obs-le-count}
+\calR^{\mathrm{obs}}_{Q,n}(\beta,L)
+\le
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L).
+\end{equation}
+The reverse comparison is the nontrivial direction.
+
+\eed{The proof uses two technical ingredients, stated and proved in \cref{app:observed-transfer}.  First, every scalar mixing distribution can be approximated within the same margin class by an equal-weight discrete measure.  Second, its atoms can be assigned uniformly at random to an arbitrarily fine partition of the question space.  After averaging over this unknown assignment, the observed question labels are ancillary unless two sampled questions fall in the same cell; that collision event has probability $O(Q^2/M)$ for a partition with $M$ cells.}
+
+\begin{theorem}[Transfer from the scalar count experiment to observed questions]
+\label{thm:observed-transfer}
+There are universal constants $c_0,c_1>0$ such that, for every $Q,n\ge1$, $\beta>0$, and $L\ge1$,
+\begin{equation}
+\label{eq:observed-transfer}
+ c_1\,\omega_{n,\beta,L}(c_0Q^{-1/2})
+\le
+\calR^{\mathrm{obs}}_{Q,n}(\beta,L)
+\le
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L).
+\end{equation}
+One may take $c_0=1/64$ and $c_1=1/16$.
+\end{theorem}
+
+The lower bound is a least-favorable-prior argument supported entirely on valid deterministic maps.  Starting from a reflected scalar hard pair, Lemma~\ref{lem:equal-weight-discretization} replaces the two mixing laws by equal-weight finite measures without changing the margin constant.  Their atoms are then assigned to question cells by uniform random permutations under the two hypotheses.  By Lemma~\ref{lem:permutation-embedding}, the prior-averaged full-data laws are arbitrarily close to the corresponding count-only product laws when $M\gg Q^2$.  Le Cam's two-point inequality then gives the same target separation, up to a universal constant.  The full proof, including the minimax quantifiers, is in Appendix~\ref{app:observed-transfer}.
+
+Combining Theorems~\ref{thm:observed-transfer} and~\ref{thm:scalar-modulus} with Lemma~\ref{lem:modulus-scaling} yields the desired equivalence.
+
+\begin{corollary}[Count-only and observed-question minimax risks are equivalent]
+\label{cor:observed-modulus}
+For fixed $\beta,L$ and every $Q,n\ge1$,
+\begin{equation}
+\label{eq:observed-modulus-equivalence}
+\calR^{\mathrm{obs}}_{Q,n}(\beta,L)
+\asymp
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\asymp
+\omega_{n,\beta,L}(Q^{-1/2}),
+\end{equation}
+where the implicit constants depend at most on the universal constants in the indirect modulus theorem.
+\end{corollary}
+
+\begin{corollary}[Embedding into the original $K$-model problem]
+\label{cor:general-lower-transfer}
+Fix $K\ge2$ and $A\ge2$.  Consider any full-model minimax class containing the following environments on $([0,1],\lambda)$: there are two answers, models 1 and 2 obey \eqref{eq:antisymmetric}, and every model $i\ge3$ returns either answer with probability $1/2$.  Then, for every estimator $\widehat w\in\Delta_K$ based on the observed questions and all raw generations,
+\begin{equation}
+\label{eq:general-lower-transfer}
+\inf_{\widehat w}
+\sup_{Z\in\mathfrak Z_{\beta,L}}
+\E_Z\!
+\left[
+R_Z(\widehat w)-\inf_{w\in\Delta_K}R_Z(w)
+\right]
+\ge
+\calR^{\mathrm{obs}}_{Q,2N}(\beta,L)
+\gtrsim
+\omega_{2N,\beta,L}(Q^{-1/2}).
+\end{equation}
+Consequently, every scalar lower bound proved above---including the root-$Q$, moment-floor, and pooled rare-boundary bounds---is a valid minimax lower bound for any larger unrestricted ensemble class containing this submodel.
+\end{corollary}
+
+\eed{The proof of the embedding, including the treatment of ties and the verification of the comparator margin condition, is given in \cref{app:observed-transfer}.}
+
+\begin{remark}[Fresh questions and finite strings]
+\label{rem:nonatomic}
+\ded{The nonatomic formulation keeps the two sample sizes conceptually separate: $Q$ counts fresh questions, while $N$ is the generation budget attached to each question.  It also supplies arbitrarily fine equal-probability partitions while keeping the population distribution fixed, which is the device used in the proof above.}
+
+\ded{If questions are instead represented literally as finite strings, let $\mathcal X=\Sigma^\star$ with the discrete sigma-field $2^{\Sigma^\star}$.  The same constant-factor transfer rate holds for the distribution-free class}
+\[
+\ded{
+\mathfrak P^{\mathrm{obs}}_{\beta,L}
+:=
+\left\{
+(\calQ,Z):
+\calQ\in\mathcal P(\mathcal X),\;
+Z:\mathcal X\to[-1,1],\;
+Z_\#\calQ\in\calG_{\beta,L}
+\right\}.
+}
+\]
+\ded{Indeed, one may take $\calQ$ to be uniform on $M$ distinct strings, randomly permute an equal-weight approximation of each scalar hard instance across those strings, and then choose $M\gg Q^2$.  Exact repetitions occur with probability at most $O(Q^2/M)$; away from that event, the observed strings reveal no more about their assigned advantages than the nonatomic cells do.  We omit the details, which otherwise repeat the equal-weight discretization, random-permutation coupling, and least-favorable-prior argument above.  Assumptions that make question text predictive of $Z(q)$ would instead define a more structured, potentially easier problem.}
+\end{remark}
+
+\section{Scalar estimators and matching endpoint rates}
+\label{sec:scalar-estimators}
+
+\subsection{Per-question plug-in estimator}
+
+For each question, estimate the sign of $Z_j$ by the majority side of the binomial count:
+\[
+\widehat\xi_j
+=
+\begin{cases}
++1,&S_j>n/2,\\
+-1,&S_j<n/2,\\
+0,&S_j=n/2.
+\end{cases}
+\]
+Set
+\[
+\widehat\theta_{\mathrm{plug}}
+=
+\frac1Q\sum_{j=1}^Q\widehat\xi_j,
+\]
+\ced{and set $\widehat\sigma_{\mathrm{plug}}=+1$ when $\widehat\theta_{\mathrm{plug}}\ge0$ and $\widehat\sigma_{\mathrm{plug}}=-1$ otherwise.}
+
+\begin{theorem}[Plug-in estimator]
+\label{thm:plugin-scalar}
+For a constant $C=C(\beta,L)$,
+\begin{equation}
+\label{eq:plugin-scalar}
+\sup_{G\in\calG_{\beta,L}}
+\E_G|\widehat\theta_{\mathrm{plug}}-\theta(G)|
+\le
+C\left(Q^{-1/2}+n^{-\beta/2}\right).
+\end{equation}
+The same expression upper-bounds the decision regret.
+\end{theorem}
+The proof, a direct conditional Hoeffding bound integrated under the margin condition, is deferred to \cref{app:finite-lower}.
+
+This estimator makes a hard sign decision separately for each question.  It is optimal in the question-limited regime but pays the larger finite-generation scale $n^{-\beta/2}$.
+
+\begin{corollary}[Question-limited regime]
+\label{cor:question-limited}
+If $Q\le c_0 n^\beta$ for a fixed constant $c_0$, then
+\begin{equation}
+\label{eq:question-limited}
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\asymp_{\beta,L,c_0}
+Q^{-1/2}.
+\end{equation}
+\end{corollary}
+\eed{Indeed, the plug-in upper bound is $O(Q^{-1/2})$ in this regime, while \cref{thm:rootQ-scalar} gives the matching lower bound.}
+
+\eed{At the opposite endpoint, the pooled polynomial estimator developed next reaches the $n^{-\beta}$ identification floor once $Q$ is sufficiently large.}
+
+\subsection{The affine moment-estimation idea}
+
+A different estimator avoids per-question thresholding.  Choose arbitrary real numbers
+\[
+a=(a_0,\dots,a_n)
+\]
+and define
+\begin{equation}
+\label{eq:affine-estimator}
+\widehat\theta_a
+:=
+\frac1Q\sum_{j=1}^Q a_{S_j}.
+\end{equation}
+Conditional on $Z=z$,
+\begin{equation}
+\label{eq:Pa}
+\E[a_S\mid Z=z]
+=
+P_a(z)
+:=
+\sum_{k=0}^n a_k
+\binom nk
+\left(\frac{1+z}{2}\right)^k
+\left(\frac{1-z}{2}\right)^{n-k}.
+\end{equation}
+Thus $P_a$ is a degree-$n$ polynomial.  If $P_a$ approximates $\sgn$, then \eqref{eq:affine-estimator} has small bias; if the coefficients $a_k$ are stable, it has small variance.  Designing an estimator is therefore the problem of finding a \emph{stable polynomial approximation} to a discontinuous function.
+
+Conversely, the Bernstein basis is a basis of $\Pi_n$, so every polynomial $P\in\Pi_n$ has a unique coefficient vector $a(P)$ satisfying $P=P_{a(P)}$.  This reverse parametrization is convenient for approximation theory.
+
+\begin{lemma}[Bernstein-statistic identity]
+\label{lem:bernstein-identity}
+For every $P\in\Pi_n$, there are unique coefficients $a_0(P),\dots,a_n(P)$ such that
+\begin{equation}
+\label{eq:bernstein-representation}
+P(z)
+=
+\sum_{k=0}^n a_k(P)
+\binom nk
+\left(\frac{1+z}{2}\right)^k
+\left(\frac{1-z}{2}\right)^{n-k}.
+\end{equation}
+Moreover,
+\[
+\E[a_S(P)\mid Z=z]=P(z).
+\]
+\end{lemma}
+
+\begin{proposition}[Bias--stability bound]
+\label{prop:bias-stability}
+Let
+\[
+A(P)=\max_k a_k(P)-\min_k a_k(P).
+\]
+Then
+\begin{equation}
+\label{eq:bias-stability}
+\sup_{G\in\calG_{\beta,L}}
+\E_G|\widehat\theta_P-\theta(G)|
+\le
+\sup_{G\in\calG_{\beta,L}}
+\int|P(z)-\sgn(z)|\,\dd G(z)
++
+\frac{A(P)}{2\sqrt Q},
+\end{equation}
+where
+\[
+\widehat\theta_P=\frac1Q\sum_{j=1}^Q a_{S_j}(P).
+\]
+\end{proposition}
+The bound follows by combining the conditional-expectation identity with the fact that a random variable supported on an interval of length $A(P)$ has variance at most $A(P)^2/4$.
+
+A self-contained Chebyshev-to-Bernstein calculation in \cref{app:coefficients} gives the following conservative coefficient bound.
+
+\begin{lemma}[Explicit Bernstein coefficient bound]
+\label{lem:B0}
+There are universal constants $C_0<\infty$ and $B_0<8$ such that, if $P$ has degree at most $d$ and $\norm{P}_{L_\infty[-1,1]}\le1$, then every degree-$n$ Bernstein coefficient of $P(2p-1)$, for every $n\ge d$, satisfies
+\[
+|a_k(P)|\le C_0B_0^d.
+\]
+One may take $B_0=7.5$.
+\end{lemma}
+
+Combining this lemma with the localized Jackson polynomial gives
+\begin{equation}
+\label{eq:B0-upper}
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\lesssim
+\inf_{1\le d\le n}
+\left\{
+ d^{-\beta}+\frac{B_0^d}{\sqrt Q}
+\right\}.
+\end{equation}
+This already proves that the $n^{-\beta}$ identification floor is constructively attainable once $Q$ is exponential in $n$.
+
+\subsection{A Bernstein--Durrmeyer spectral refinement}
+\label{sec:durrmeyer}
+
+The exponential coefficient bound above ignores the finite trial budget $n$ until the constraint $d\le n$.  A more informative calculation comes from the singular values of the binomial conditional-expectation operator.
+
+Put $p=(1+z)/2$ and define
+\[
+(T_na)(p)
+=
+\sum_{k=0}^n a_k\binom nkp^k(1-p)^{n-k}.
+\]
+Equip $\R^{n+1}$ with
+\[
+\norm{a}_{\nu_n}^2
+=
+\frac1{n+1}\sum_{k=0}^n a_k^2,
+\]
+and $L_2[0,1]$ with Lebesgue measure.  The adjoint is
+\[
+(T_n^*f)(k)
+=
+(n+1)\int_0^1f(u)\binom nk u^k(1-u)^{n-k}\,\dd u.
+\]
+The composition $D_n=T_nT_n^*$ is the classical Bernstein--Durrmeyer operator.
+
+Let $L_0,L_1,\dots$ be the orthonormal shifted Legendre polynomials on $[0,1]$.
+
+\begin{proposition}[Durrmeyer singular values]
+\label{prop:durrmeyer}
+For $0\le j\le n$,
+\begin{equation}
+\label{eq:durrmeyer-eigen}
+D_nL_j=\lambda_{j,n}L_j,
+\qquad
+\lambda_{j,n}
+=
+\frac{n!(n+1)!}{(n-j)!(n+j+1)!}
+=
+\prod_{r=0}^{j-1}\frac{n-r}{n+r+2}.
+\end{equation}
+Consequently, if
+\[
+P=\sum_{j=0}^d c_jL_j
+\]
+and $a(P)$ is its degree-$n$ Bernstein coefficient vector, then
+\begin{equation}
+\label{eq:coefficient-spectral}
+\frac1{n+1}\sum_{k=0}^n a_k(P)^2
+=
+\sum_{j=0}^d\frac{c_j^2}{\lambda_{j,n}}.
+\end{equation}
+In particular, with
+\begin{equation}
+\label{eq:kappa}
+\kappa_{d,n}
+:=
+\lambda_{d,n}^{-1/2}
+=
+\left[
+\prod_{r=0}^{d-1}\frac{n+r+2}{n-r}
+\right]^{1/2},
+\end{equation}
+one has
+\begin{equation}
+\label{eq:range-spectral}
+A(P)
+\le
+2\sqrt{n+1}\,\kappa_{d,n}\norm{P}_{L_2[0,1]}.
+\end{equation}
+\end{proposition}
+
+The eigenvalue formula is classical; for completeness, \cref{app:durrmeyer} derives it from degree preservation and orthogonality, and then proves the singular-value identity.  Applying \eqref{eq:range-spectral} to the bounded Jackson approximants yields the fully rigorous refinement
+\begin{equation}
+\label{eq:spectral-upper}
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\lesssim
+\inf_{1\le d\le n}
+\left\{
+ d^{-\beta}
++
+\frac{\min\{B_0^d,\sqrt{n+1}\,\kappa_{d,n}\}}{\sqrt Q}
+\right\}.
+\end{equation}
+
+At $d=n$,
+\[
+\kappa_{n,n}^2
+=
+\binom{2n+1}{n}
+\asymp
+\frac{4^n}{\sqrt n}.
+\]
+Therefore the moment estimator reaches risk $O(n^{-\beta})$ whenever
+\begin{equation}
+\label{eq:large-Q-threshold}
+Q
+\gtrsim
+4^n n^{2\beta+1/2}.
+\end{equation}
+Combined with \cref{thm:identification-floor}, this gives a second rigorous endpoint regime.
+
+\begin{corollary}[Identification-limited regime]
+\label{cor:identification-limited}
+There is $C=C(\beta,L)$ such that, if \eqref{eq:large-Q-threshold} holds with a sufficiently large constant, then
+\[
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\asymp_{\beta,L}
+n^{-\beta}.
+\]
+\end{corollary}
+
+\section{Spectral conjecture and the three-phase picture}
+\label{sec:spectral-conjecture}
+
+The factor $\sqrt n$ in \eqref{eq:spectral-upper} arises because the $L_2(\nu_n)$ coefficient norm is converted to a worst-case range bound.  The Durrmeyer spectrum suggests that the intrinsic inverse difficulty at degree $d$ is instead $\kappa_{d,n}$ itself.
+
+\begin{conjecture}[Spectral minimax interpolation]
+\label{conj:Psi}
+For fixed $\beta,L$, the scalar minimax risk satisfies
+\begin{equation}
+\label{eq:Psi}
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\asymp_{\beta,L}
+\Psi_\beta(Q,n),
+\qquad
+\Psi_\beta(Q,n)
+:=
+\inf_{1\le d\le n}
+\left\{
+ d^{-\beta}
++
+\frac{\kappa_{d,n}}{\sqrt Q}
+\right\}.
+\end{equation}
+\end{conjecture}
+
+The conjecture is stronger than \eqref{eq:spectral-upper}.  Proving it requires a robust stability theorem that connects the Durrmeyer Hilbert-space singular values to the worst-case Hellinger or variance geometry over the entire margin class, together with a matching dual lower construction.
+
+The spectral factor has transparent asymptotics.  For $d\le n/2$,
+\begin{equation}
+\label{eq:kappa-asymp}
+ c\frac{d(d+1)}{n}
+\le
+\log\kappa_{d,n}
+\le
+C\frac{d(d+1)}{n},
+\end{equation}
+where $c,C>0$ are numerical constants.  Thus
+\[
+\kappa_{d,n}
+=
+\exp\{\Theta(d^2/n)\}
+\qquad(d\ll n).
+\]
+At the endpoint, $\kappa_{n,n}\asymp2^nn^{-1/4}$.
+
+If \cref{conj:Psi} holds, optimizing over $d$ yields three regimes, away from transition zones:
+\begin{equation}
+\label{eq:three-phase}
+\Psi_\beta(Q,n)
+\asymp
+\begin{cases}
+Q^{-1/2},
+&Q\lesssim n^\beta,\\[1.2ex]
+\bigl[n\log(Q/n^\beta)\bigr]^{-\beta/2},
+&n^\beta\ll Q\ll e^{cn},\\[1.2ex]
+n^{-\beta},
+&Q\gtrsim e^{cn}\operatorname{poly}(n).
+\end{cases}
+\end{equation}
+The first and third lines are already rigorous, with explicit sufficient conditions in \cref{cor:question-limited,cor:identification-limited}.  The middle line is the conjectural interpolation.  The notation $\ll$ describes asymptotic separation from the transition boundaries; near those boundaries the finite-sample infimum \eqref{eq:Psi} is the meaningful expression.
+
+\paragraph{What remains to prove.}
+For a polynomial $P$, define the robust stability norm
+\[
+\mathsf S_n(P)
+:=
+\sup_{G\in\calG_{\beta,L}}
+\sqrt{\Var_{S\sim K_nG}(a_S(P))}.
+\]
+An upper proof of \cref{conj:Psi} would follow from degree-$d$ approximants satisfying
+\[
+\sup_G\int|P_d-\sgn|\,\dd G\lesssim d^{-\beta},
+\qquad
+\mathsf S_n(P_d)\lesssim\kappa_{d,n}.
+\]
+A matching lower proof would construct $G_{d,+},G_{d,-}$ with target separation $\gtrsim d^{-\beta}$ and Hellinger distance after the binomial channel $\lesssim d^{-\beta}/\kappa_{d,n}$.  The present paper isolates this as a concrete inverse-approximation problem rather than assuming the answer.
+
+\section{Discussion and open problems}
+\label{sec:back-general}
+
+The scalar model is both informative and restrictive.
+
+\paragraph{Lower bounds transfer, including observed question identities.}
+The scalar count experiment is not literally the same as the original observed-question experiment.  \Cref{thm:observed-transfer} closes this gap by randomly assigning finite approximations of scalar hard instances to equal-mass cells of a fixed nonatomic question population.  The prior is supported on deterministic maps, and the observed labels are ancillary up to an explicit $O(Q^2/M)$ cell-collision error.  \Cref{cor:general-lower-transfer} then embeds this observed-question model into every $K\ge2$, $A\ge2$ ensemble class containing arbitrary measurable answer kernels.  Thus the root-$Q$, $N^{-\beta}$, and pooled rare-boundary lower bounds all transfer.  This conclusion can fail under additional structure that makes question features predictive of the latent advantages.
+
+\paragraph{The scalar upper estimator does not transfer automatically.}
+Without antisymmetry, even with two models and binary answers, a question has two latent signed advantages $(Z_1,Z_2)$ and
+\[
+M_q(t)=tZ_1+(1-t)Z_2.
+\]
+Different $t\in[0,1]$ induce genuinely different classifiers.  The target is the full discontinuous risk curve
+\[
+t\mapsto \Pp\{tZ_1+(1-t)Z_2\le0\},
+\]
+not one linear functional.  For general $K$ and multiple wrong answers, one must estimate and optimize a family of polytopal decision risks.
+
+\paragraph{The general pooling problem remains open.}
+A possible extension would replace the discontinuous indicator by a multivariate polynomial surrogate and then minimize an estimated surrogate risk over $w$.  Standard polynomial sign-pattern bounds suggest that the combinatorial complexity of optimizing such a surrogate may be manageable.  The unresolved difficulty is statistical rather than purely combinatorial: high-order moments must be estimated stably from only $N$ generations per model and question.  The relevant sign-pattern bound and this distinction are recorded in \cref{app:warren}.
+
+\paragraph{When buffered ERM is appropriate.}
+The general theorem is most compelling when labeled questions are scarce relative to generations.  In the scalar submodel, if $Q\lesssim N^\beta$, a per-question plug-in method is minimax optimal because the unavoidable $Q^{-1/2}$ error dominates finite-generation sign corruption.  This provides theoretical support for the simple buffered procedure in the regime most relevant to small reasoning benchmarks.
+
+\paragraph{When pooling can help.}
+With many questions, hard-thresholding every empirical margin wastes information.  The scalar moment estimator pools the full histogram of generation counts and can improve the finite-generation dependence from $N^{-\beta/2}$ toward the $N^{-\beta}$ identification floor.  This phenomenon is invisible to an analysis that treats each question as a separately corrupted binary label.
+
+\paragraph{What the margin exponent means.}
+The exponent $\beta$ measures the population mass of near-tie questions.  It can in principle be diagnosed from empirical margin histograms, but estimating it reliably is itself nontrivial because the margins are noisy and the fitted weight is data-dependent.  The theory should therefore be read as a structural description rather than a plug-and-play confidence formula without additional calibration.
+
+\paragraph{Limitations.}
+The general theorem evaluates the clean Best-of-$\infty$ risk rather than the realized finite-generation deployment accuracy.  The sharp scalar upper theory still relies on an antisymmetric binary structure.  For lower bounds, the count-only reduction is now justified for the original observed-question problem over a broad nonparametric class, but the transfer deliberately excludes structural relations between question features and latent model advantages; such structure can make the questions informative and improve the rate.  The Hellinger-modulus theorem is imported from general decision theory, and the $N^{-\beta}$ count-only identification bound imports one weighted inverse-approximation theorem.  Finally, the attractive closed-form phase diagram remains conjectural in its intermediate regime.
+
+\section{Conclusion}
+
+Weighted test-time LLM ensembling contains two distinct statistical problems.  Across $Q$ labeled questions, one must learn a weight vector that generalizes.  Within each question, $N$ generations only imperfectly reveal the model answer distributions.  A margin buffer cleanly separates these channels and yields a general-$K$ guarantee with a root-$Q$ term and an $N^{-\beta/2}$ finite-generation term.
+
+The scalar antisymmetric model shows that this is not the end of the story.  When evidence can be pooled across many questions, the problem becomes indirect estimation of \ced{a linear sign-imbalance functional} through a binomial-mixture channel.  The exact scalar minimax difficulty is governed by a Hellinger modulus, and the count-only channel has an $N^{-\beta}$ moment-identification width rather than an $N^{-\beta/2}$ floor.  A random-permutation embedding proves that the same lower bounds remain valid when question identities are observed and in larger unrestricted ensemble classes.  The two rigorous endpoint regimes already reveal a qualitative transition between question-limited learning and population-level moment inversion.  Determining the exact spectral interpolation, and extending the matching upper theory to genuinely multivariate ensemble weights, are natural next problems.
+
+\appendix
+
+\section{Proof of the buffered-ERM theorem}
+\label{app:buffered-proof}
+
+For the proof, express the margins as affine comparisons in $w$.  Set
+\[
+p_\cdot(a\mid q)
+:=
+\bigl(p_1(a\mid q),\dots,p_K(a\mid q)\bigr),
+\qquad
+\widehat p_\cdot(a\mid q_j)
+:=
+\bigl(\widehat p_1(a\mid q_j),\dots,
+\widehat p_K(a\mid q_j)\bigr),
+\]
+and define
+\begin{equation}
+\label{eq:gap-vectors}
+\Delta_{q,a}
+:=
+p_\cdot(a^\star(q)\mid q)-p_\cdot(a\mid q),
+\qquad
+\widehat\Delta_{q_j,a}
+:=
+\widehat p_\cdot(a^\star(q_j)\mid q_j)
+-\widehat p_\cdot(a\mid q_j).
+\end{equation}
+Then
+\begin{equation}
+\label{eq:margin-linear-form}
+M_q(w)=\min_{a\ne a^\star(q)}\inner{w}{\Delta_{q,a}},
+\qquad
+\widehat M_{q_j}(w)
+=\min_{a\ne a^\star(q_j)}\inner{w}{\widehat\Delta_{q_j,a}}.
+\end{equation}
+
+\begin{lemma}[Uniform margin accuracy]
+\label{lem:margin-accuracy}
+With probability at least $1-\delta/4$ over the generations, conditional on $q_1,\dots,q_Q$,
+\begin{equation}
+\label{eq:margin-accuracy}
+\sup_{j\le Q}\sup_{w\in\Delta_K}
+\abs{\widehat M_{q_j}(w)-M_{q_j}(w)}
+\le\eps_N.
+\end{equation}
+Consequently, on this event, for every $j$ and $w$,
+\begin{equation}
+\label{eq:sandwich}
+\one\{M_{q_j}(w)\le0\}
+\le
+\one\{\widehat M_{q_j}(w)\le\eps_N\}
+\le
+\one\{M_{q_j}(w)\le2\eps_N\}.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+For each $(j,i,a)$, Hoeffding's inequality gives
+\[
+\Pp\left(
+\abs{\widehat p_i(a\mid q_j)-p_i(a\mid q_j)}>\frac{\eps_N}{2}
+\right)
+\le
+2\exp\left(-\frac{N\eps_N^2}{2}\right).
+\]
+A union bound over at most $KAQ$ triples makes the probability of any violation at most $\delta/4$.  On the complementary event,
+\[
+\abs{\inner{w}{\widehat\Delta_{q_j,a}-\Delta_{q_j,a}}}
+\le\eps_N
+\]
+for every $w\in\Delta_K$.  Taking minima over wrong answers preserves this bound and gives \eqref{eq:margin-accuracy}; the indicator sandwich follows.
+\end{proof}
+
+For $t\ge0$, define
+\begin{equation}
+\label{eq:margin-class}
+\calF_t
+:=
+\left\{
+q\mapsto\one\{M_q(w)\le t\}:w\in\Delta_K
+\right\}.
+\end{equation}
+
+\begin{lemma}[Hyperplane-arrangement growth bound]
+\label{lem:capacity}
+Let $p=K-1$.  For every $m\ge1$ and $t\ge0$,
+\begin{equation}
+\label{eq:growth-bound}
+\Pi_{\calF_t}(m)
+\le
+\sum_{r=0}^{p}2^r\binom{m(A-1)}{r}
+\le
+\left(\frac{2e\,m(A-1)}{p}\right)^p
+\end{equation}
+whenever $m(A-1)\ge p$.  In particular, the logarithmic complexity is of order $p\log(eAm)$ and the VC dimension is $O(K\log(AK))$.
+\end{lemma}
+
+\begin{proof}
+On $m$ fixed questions, the label vector is determined by the weak sign pattern of at most $m(A-1)$ affine functions
+\[
+w\mapsto\inner{w}{\Delta_{q_j,a}}-t
+\]
+on the $(K-1)$-dimensional affine hull of $\Delta_K$.  The face-count bound proved in \cref{app:capacity} gives \eqref{eq:growth-bound}; the same appendix gives the VC-dimension conversion.
+\end{proof}
+
+The standard growth-function inequality in \cref{app:capacity} yields, with probability at least $1-\delta/4$ over the questions,
+\begin{equation}
+\label{eq:uniform-margin-deviation}
+\sup_{w\in\Delta_K,\,t\in\{0,2\eps_N\}}
+\left|
+\frac1Q\sum_{j=1}^Q\one\{M_{q_j}(w)\le t\}
+-
+\Pp\{M_q(w)\le t\}
+\right|
+\le\mathfrak v_Q(\delta).
+\end{equation}
+
+\begin{proof}[Proof of \cref{thm:buffered-main}]
+Write
+\[
+\widetilde R_t(w)
+:=
+\frac1Q\sum_{j=1}^Q\one\{M_{q_j}(w)\le t\},
+\qquad
+R_t(w)
+:=
+\Pp\{M_q(w)\le t\}.
+\]
+On the events in \cref{lem:margin-accuracy} and \eqref{eq:uniform-margin-deviation},
+\begin{align*}
+R(\widehat w_{\eps_N})
+&=R_0(\widehat w_{\eps_N})\\
+&\le\widetilde R_0(\widehat w_{\eps_N})+\mathfrak v_Q\\
+&\le\widehat R_{\eps_N}(\widehat w_{\eps_N})+\mathfrak v_Q\\
+&\le\widehat R_{\eps_N}(w^\star)+\mathfrak v_Q\\
+&\le\widetilde R_{2\eps_N}(w^\star)+\mathfrak v_Q\\
+&\le R_{2\eps_N}(w^\star)+2\mathfrak v_Q.
+\end{align*}
+Finally,
+\[
+R_{2\eps_N}(w^\star)-R_0(w^\star)
+=
+\Pp\{0<M_q(w^\star)\le2\eps_N\}
+\le C_m(2\eps_N)^\beta.
+\]
+Subtracting $R(w^\star)=R_0(w^\star)$ proves the result.
+\end{proof}
+
+\section{Hyperplane arrangements and uniform convergence}
+\label{app:capacity}
+
+\subsection{Weak sign patterns of affine functions}
+
+Let $H$ affine hyperplanes be given in $\R^p$.  Denote by $F(H,p)$ the total number of relatively open faces of all dimensions in the arrangement.  We use the standard bound
+\begin{equation}
+\label{eq:faces-bound}
+F(H,p)
+\le
+\sum_{r=0}^{p}2^r\binom Hr.
+\end{equation}
+For completeness, one can prove this by induction on $H$.  Adding the last hyperplane leaves every old face not intersected by it unchanged.  Every face that is cut contributes at most two new faces, and the intersections induced inside the new hyperplane form an arrangement of at most $H-1$ hyperplanes in dimension $p-1$.  The resulting recursion is dominated by
+\[
+F(H,p)\le F(H-1,p)+2F(H-1,p-1),
+\]
+with $F(0,p)=1$ and $F(H,0)=1$.  The right side of \eqref{eq:faces-bound} obeys the same recursion by Pascal's identity.  Each weak sign pattern of the affine functions is constant on a relatively open face, so the same bound controls weak sign patterns, including zeros.
+
+If $H\ge p$, then
+\[
+\sum_{r=0}^{p}2^r\binom Hr
+\le
+\sum_{r=0}^{p}\binom{2H}{r}
+\le
+\left(\frac{2eH}{p}\right)^p.
+\]
+This proves \cref{lem:capacity}.
+
+\subsection{A growth-function deviation inequality}
+
+Let $\calF$ be a class of $\{0,1\}$-valued functions and let $P_Q$ denote the empirical measure of $Q$ independent observations.  A standard symmetrization and union-bound argument gives
+\begin{equation}
+\label{eq:vc-ineq}
+\Pp\left
+\{
+\sup_{f\in\calF}|P_Qf-Pf|>u
+\right\}
+\le
+8\Pi_{\calF}(2Q)\exp\left(-\frac{Qu^2}{32}\right).
+\end{equation}
+One proof introduces an independent ghost sample, reduces the population deviation to a two-sample deviation, conditions on the combined $2Q$ observations, and unions over the at most $\Pi_{\calF}(2Q)$ realized label vectors; Hoeffding's inequality handles each vector.  Solving the right side for $u$ and inserting \eqref{eq:growth-bound} yields \eqref{eq:vq}--\eqref{eq:uniform-margin-deviation} after a union bound over $t=0$ and $t=2\eps_N$.
+
+To obtain the stated VC-dimension order, let $d=\operatorname{VC}(\calF_t)$.  If $d(A-1)\ge K-1$, then shattering gives
+\[
+2^d
+\le
+\left(\frac{2ed(A-1)}{K-1}\right)^{K-1}.
+\]
+An elementary rearrangement yields $d\le C K\log(AK)$ for a universal $C$.
+
+\section{Optional fast-rate refinement across questions}
+\label{app:fastQ}
+
+For completeness, we record how the $Q^{-1/2}$ term can improve when the clean risk identifies its optimum strongly enough.  This refinement requires assumptions beyond the margin condition used in the main results.  Define
+\[
+g_w(q)=\ell_q(w)-\ell_q(w^\star),
+\qquad
+\mathcal E(w)=\E g_w=R(w)-R(w^\star),
+\]
+and
+\begin{equation}
+\label{eq:disagreement}
+D(w,w^\star)
+:=
+\Pp\{\ell_q(w)\ne\ell_q(w^\star)\}
+=\E g_w^2.
+\end{equation}
+
+\begin{assumption}[Absolute comparator margin]
+\label{ass:absolute-margin}
+There are $C_m>0$, $\beta>0$, and $t_0>0$ such that
+\[
+\Pp\{\abs{M_q(w^\star)}\le t\}
+\le C_m t^\beta,
+\qquad 0<t\le t_0.
+\]
+\end{assumption}
+
+\begin{assumption}[Risk growth and separation]
+\label{ass:risk-growth}
+There are $c_g>0$, $\gamma>0$, $r_0>0$, and $c_{\mathrm{sep}}>0$ such that
+\[
+\mathcal E(w)
+\ge
+c_g\norm{w-w^\star}_1^\gamma
+\quad\text{when }\norm{w-w^\star}_1\le r_0,
+\]
+and $\mathcal E(w)\ge c_{\mathrm{sep}}$ when $\norm{w-w^\star}_1>r_0$.
+\end{assumption}
+
+\begin{proposition}[Geometry implies Bernstein]
+\label{prop:geometry-bernstein}
+Under \cref{ass:absolute-margin,ass:risk-growth}, with
+\[
+\alpha=\min\left\{1,\frac\beta\gamma\right\},
+\]
+there is a constant $B$ depending only on the margin and growth parameters such that
+\begin{equation}
+\label{eq:bernstein}
+D(w,w^\star)
+\le
+B\,\mathcal E(w)^\alpha
+\qquad\text{for every }w\in\Delta_K.
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+The margin is one-Lipschitz in $\ell_1$ because $\norm{\Delta_{q,a}}_\infty\le1$.  If the losses at $w$ and $w^\star$ differ, then
+\[
+\abs{M_q(w^\star)}
+\le
+\norm{w-w^\star}_1.
+\]
+The absolute margin condition therefore gives $D(w,w^\star)\lesssim r^\beta$ at distance $r$, while risk growth gives $\mathcal E(w)\gtrsim r^\gamma$.  Combining the two bounds locally, weakening exponents larger than one, and using the separation condition away from $w^\star$ proves \eqref{eq:bernstein}.
+\end{proof}
+
+\begin{theorem}[Optional fast $Q$-rate]
+\label{thm:fastQ}
+Under \cref{ass:absolute-margin,ass:risk-growth}, let
+\[
+\alpha=\min\left\{1,\frac\beta\gamma\right\},
+\qquad
+V_Q=(K-1)\log(eAQ)+\log(1/\delta).
+\]
+Then the buffered estimator satisfies, with probability at least $1-\delta$,
+\begin{equation}
+\label{eq:fastQ}
+R(\widehat w_{\eps_N})-R(w^\star)
+\le
+C\left(\frac{V_Q}{Q}\right)^{1/(2-\alpha)}
++C'\left(\frac{\log(KAQ/\delta)}{N}\right)^{\beta/2}
++C''\frac{\log(1/\delta)}{Q}.
+\end{equation}
+\end{theorem}
+
+\subsection{Localized empirical-process bound}
+
+We record the empirical-process lemma used in \cref{thm:fastQ}.  It is a finite-growth-function version of the standard Bernstein fast-rate argument \citep{MassartNedelec}.
+
+\begin{lemma}[Localized bound for approximate ERM]
+\label{lem:localized}
+Let $\{\ell_w:w\in\calW\}$ be $\{0,1\}$-valued losses, let $w^\star$ minimize $P\ell_w$, and write
+\[
+\mathcal E(w)=P(\ell_w-\ell_{w^\star}),
+\qquad
+D(w,w^\star)=P(\ell_w-\ell_{w^\star})^2.
+\]
+Suppose
+\[
+D(w,w^\star)\le B\mathcal E(w)^\alpha,
+\qquad 0<\alpha\le1,
+\]
+and the growth function on $Q$ points is at most $e^{V_Q}$.  If a data-dependent $\widetilde w$ satisfies
+\[
+P_Q\ell_{\widetilde w}
+\le
+P_Q\ell_{w^\star}+a,
+\]
+then, with probability at least $1-\delta$,
+\begin{equation}
+\label{eq:localized-bound}
+\mathcal E(\widetilde w)
+\le
+C_{B,\alpha}
+\left[
+ a
++
+\left(\frac{V_Q+\log(1/\delta)}{Q}\right)^{1/(2-\alpha)}
++
+\frac{V_Q+\log(1/\delta)}{Q}
+\right].
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+For $g_w=\ell_w-\ell_{w^\star}$, Bernstein's inequality gives, for fixed $w$ and $u>0$,
+\[
+(P-P_Q)g_w
+\le
+\sqrt{\frac{2D(w,w^\star)u}{Q}}
++
+\frac{2u}{3Q}
+\]
+except on an event of probability $e^{-u}$.  On the shell
+\[
+2^{j-1}r<\mathcal E(w)\le2^jr,
+\]
+the variance is at most $B(2^jr)^\alpha$.  Conditional on a combined sample, at most $e^{V_Q}$ excess-loss vectors occur.  A union bound over those vectors and over dyadic shells gives, simultaneously for every $w$ with $\mathcal E(w)\ge r$,
+\[
+(P-P_Q)g_w
+\le
+C\left[
+\sqrt{\frac{\mathcal E(w)^\alpha U}{Q}}
++
+\frac{U}{Q}
+\right],
+\qquad
+U=V_Q+\log(1/\delta)+\log\log(2/r),
+\]
+where the harmless iterated logarithm can be absorbed into the numerical constant by geometrically allocating the failure probability across shells.  Choose
+\[
+r_0=C_{B,\alpha}
+\left(\frac{V_Q+\log(1/\delta)}{Q}\right)^{1/(2-\alpha)}
++C\frac{V_Q+\log(1/\delta)}{Q}
+\]
+large enough that, for every $r\ge r_0$, the right side is at most $r/2$.  If $\mathcal E(\widetilde w)>2(a+r_0)$, then
+\begin{align*}
+P_Qg_{\widetilde w}
+&\ge
+Pg_{\widetilde w}-\frac12\mathcal E(\widetilde w)\\
+&>
+a,
+\end{align*}
+contradicting the approximate-ERM inequality.  Rearranging constants gives \eqref{eq:localized-bound}.
+\end{proof}
+
+\begin{proof}[Proof of \cref{thm:fastQ}]
+On the uniform margin-accuracy event,
+\[
+P_Q\ell_{\widehat w_{\eps_N}}
+\le
+P_Q\ell_{w^\star}
++P_Q\one\{0<M_q(w^\star)\le2\eps_N\}.
+\]
+The last random average is Bernoulli with mean at most $C_m(2\eps_N)^\beta$.  A multiplicative Chernoff bound implies, with probability at least $1-\delta/4$,
+\[
+P_Q\one\{0<M_q(w^\star)\le2\eps_N\}
+\le
+2C_m(2\eps_N)^\beta
++C\frac{\log(1/\delta)}{Q}.
+\]
+Apply \cref{lem:localized} with the Bernstein condition from \cref{prop:geometry-bernstein}.
+\end{proof}
+
+\section{Technical details for the scalar modulus}
+\label{app:scalar-modulus}
+
+\subsection{Geometry of the margin class}
+
+\begin{lemma}[Basic properties of the margin class]
+\label{lem:margin-class-properties}
+The class $\calG_{\beta,L}$ is convex, invariant under reflection
+$G\mapsto G^\dagger$, where $G^\dagger(B)=G(-B)$, and compact for weak convergence.  Every $G\in\calG_{\beta,L}$ satisfies $G(\{0\})=0$.  The functional $G\mapsto\theta(G)$ and the channel map $G\mapsto K_nG$ are affine and continuous on $\calG_{\beta,L}$.  Moreover,
+\begin{equation}
+\label{eq:reflection-properties}
+\theta(G^\dagger)=-\theta(G),
+\qquad
+(K_nG^\dagger)(k)=(K_nG)(n-k),
+\quad k=0,\dots,n.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Convexity and reflection invariance are immediate from the definition of the class.  Since $[-1,1]$ is compact, the set of all probability measures on it is weakly compact.  It remains to show that the margin class is weakly closed.  Suppose $G_m\Rightarrow G$.  Fix $0<t<1$ and choose $\eta>0$ such that $t+\eta<1$.  By the Portmanteau theorem applied to the open interval $(-t-\eta,t+\eta)$,
+\[
+G([-t,t])
+\le
+G((-t-\eta,t+\eta))
+\le
+\liminf_{m\to\infty}G_m((-t-\eta,t+\eta))
+\le
+L(t+\eta)^\beta.
+\]
+Letting $\eta\downarrow0$ proves the margin inequality for $t<1$; at $t=1$ it is automatic because $G([-1,1])=1\le L$.  Thus $\calG_{\beta,L}$ is weakly closed and hence compact.  Taking $t\downarrow0$ shows that $G(\{0\})=0$.
+
+For continuity of $\theta$, let $\psi_\delta$ be the continuous clipped-sign function that equals $-1$ on $[-1,-\delta]$, equals $z/\delta$ on $[-\delta,\delta]$, and equals $1$ on $[\delta,1]$.  Uniformly over the margin class,
+\[
+\left|\theta(G)-\int\psi_\delta\,\dd G\right|
+\le
+2G([-\delta,\delta])
+\le
+2L\delta^\beta.
+\]
+The integral of $\psi_\delta$ is weakly continuous.  First letting $m\to\infty$ and then $\delta\downarrow0$ shows that $\theta(G_m)\to\theta(G)$.
+
+Each coordinate of $K_nG$ is the integral of a bounded continuous polynomial in $z$, so the channel map is weakly continuous; both the channel and target maps are affine by linearity of integration.  Finally, reflection changes the sign of the target, and the Bernstein identity
+\[
+b_{k,n}\!\left(\frac{1-z}{2}\right)
+=
+b_{n-k,n}\!\left(\frac{1+z}{2}\right)
+\]
+gives the channel identity in \eqref{eq:reflection-properties}.
+\end{proof}
+
+\subsection{An imported indirect modulus principle}
+
+\begin{theorem}[Indirect Hellinger-modulus principle; imported]
+\label{thm:imported-modulus}
+Let $\mathcal X$ be a compact convex subset of $\Delta_m\times[-B,B]$.  Under parameter $x=(p,\tau)\in\mathcal X$, observe $Q$ independent categorical variables with common law $p$, and estimate the linear coordinate $\tau$.  Define
+\[
+\omega_{\mathcal X}(\eps)
+:=
+\sup\left\{
+|\tau-\tau'|:
+(p,\tau),(p',\tau')\in\mathcal X,
+\ h(p,p')\le\eps
+\right\}.
+\]
+For absolute-error loss, there are numerical constants $0<c_0<C_0<\infty$, independent of $(m,Q,B,\mathcal X)$ after the natural scaling by $B$, such that
+\begin{equation}
+\label{eq:imported-modulus}
+c_0\,\omega_{\mathcal X}(c_0Q^{-1/2})
+\le
+\inf_{\widehat\tau}
+\sup_{(p,\tau)\in\mathcal X}
+\E_p|\widehat\tau-\tau|
+\le
+C_0\,\omega_{\mathcal X}(C_0Q^{-1/2}).
+\end{equation}
+The result allows the projection $(p,\tau)\mapsto p$ to be noninjective; a positive value of $\omega_{\mathcal X}(0)$ is precisely an identification floor.
+\end{theorem}
+
+\begin{remark}[Source of \cref{thm:imported-modulus}]
+Donoho and Liu's Hellinger-modulus theorem gives the expected-loss equivalence for linear functionals over convex statistical models.  Its proof tests the convex hypotheses $\{\tau\le a\}$ and $\{\tau\ge a+\delta\}$ and then inverts the resulting family of tests.  The same argument applies to the indirect parameterization above because the images of these hypotheses remain convex sets of categorical distributions.  Juditsky and Nemirovski treat a compact convex signal set, an affine observation map, and a linear target, and construct a near-minimax affine estimator by convex programming.  We use \cref{thm:imported-modulus} as an imported decision-theoretic result; the reflection argument needed for decision regret is problem-specific and is proved below.
+\end{remark}
+
+\subsection{Scaling of the modulus}
+
+\begin{lemma}[Scaling of the convex Hellinger modulus]
+\label{lem:modulus-scaling}
+For $0<\eps_1\le\eps_2$,
+\begin{equation}
+\label{eq:modulus-scaling}
+\aed{\omega_{n,\beta,L}(\eps_1)} \,\le\, \omega_{n,\beta,L}(\eps_2)
+\,\le\,
+\left(\frac{\eps_2}{\eps_1}\right)^2
+\omega_{n,\beta,L}(\eps_1).
+\end{equation}
+Consequently, replacing an argument of the modulus by any fixed positive multiple changes its value by at most a fixed multiplicative factor.
+\end{lemma}
+
+\begin{proof}
+\aed{The first inequality follows because the set of pairs admissible at radius $\eps_1$ is contained in the set admissible at radius $\eps_2$.  For the second inequality, take any $G,H\in\calG_{\beta,L}$ satisfying $h(K_nG,K_nH)\le\eps_2$. Let $\overline G=(G+H)/2$, and set
+\[
+\lambda=\left(\frac{\eps_1}{\eps_2}\right)^2,
+\qquad
+G_\lambda=(1-\lambda)\overline G+\lambda G,
+\qquad
+H_\lambda=(1-\lambda)\overline G+\lambda H.
+\]
+Since $0<\lambda\le1$ and the margin class is convex, $G_\lambda$ and $H_\lambda$ remain in it.  Because $K_n$ is affine and squared Hellinger distance is jointly convex,
+\[
+h^2(K_nG_\lambda,K_nH_\lambda)
+\le
+\lambda h^2(K_nG,K_nH)
+\le\eps_1^2.
+\]
+Moreover, affinity of $\theta$ gives
+$
+\lambda|\theta(G)-\theta(H)|
+=
+|\theta(G_\lambda)-\theta(H_\lambda)|
+\le
+\omega_{n,\beta,L}(\eps_1).
+$
+Dividing by $\lambda$ and taking the supremum over the admissible pairs $G,H$ proves \eqref{eq:modulus-scaling}.
+}
+% Take $G,H$ with $h(K_nG,K_nH)\le\eps_2$, let $\overline G=(G+H)/2$, and set
+% \[
+% \lambda=\left(\frac{\eps_1}{\eps_2}\right)^2,
+% \qquad
+% G_\lambda=(1-\lambda)\overline G+\lambda G,
+% \qquad
+% H_\lambda=(1-\lambda)\overline G+\lambda H.
+% \]
+% The margin class is convex, the target separation is multiplied by $\lambda$, and joint convexity of squared Hellinger distance gives
+% \[
+% h^2(K_nG_\lambda,K_nH_\lambda)
+% \le
+% \lambda h^2(K_nG,K_nH)
+% \le\eps_1^2.
+% \]
+% Thus $\lambda|\theta(G)-\theta(H)|\le\omega_{n,\beta,L}(\eps_1)$.  Taking the supremum proves \eqref{eq:modulus-scaling}.
+\end{proof}
+
+\subsection{Proof of the scalar minimax characterization}
+
+\begin{proof}[Proof of \cref{thm:scalar-modulus}]
+By \cref{lem:margin-class-properties}, the set
+\[
+\mathcal X_n
+:=
+\{(K_nG,\theta(G)):G\in\calG_{\beta,L}\}
+\subset\Delta_{n+1}\times[-1,1]
+\]
+is compact and convex, and both coordinates are continuous affine functions of $G$.  Its indirect modulus is exactly \eqref{eq:modulus}.  Applying \cref{thm:imported-modulus}, followed by \cref{lem:modulus-scaling}, gives
+\[
+\calR^{\mathrm{abs}}_{Q,n}(\beta,L)
+\le
+C\,\omega_{n,\beta,L}(Q^{-1/2})
+\]
+for a universal constant $C$.  This proves the rightmost inequality in \eqref{eq:scalar-modulus-chain}; the pointwise reduction \eqref{eq:dec-le-abs} gives the middle inequality.
+
+It remains to prove the lower bound for decision regret.  Fix \aed{ $\eps=(2\sqrt Q)^{-1}$}
+%\[
+%\eps=\frac{1}{2\sqrt Q}
+%\]
+and take any $G,H\in\calG_{\beta,L}$ satisfying $h(K_nG,K_nH)\le\eps$.  After interchanging $G$ and $H$ if necessary, write
+\[
+\delta:=\theta(G)-\theta(H)\ge0.
+\]
+The original targets may have the same sign, in which case the same side is optimal under both distributions and the pair need not be difficult for the decision problem.  Reflection symmetrization produces a pair with opposite optimal decisions.  Specifically, define
+\[
+G_+:=\frac12(G+H^\dagger),
+\qquad
+G_-:=\frac12(H+G^\dagger).
+\]
+By \cref{lem:margin-class-properties}, $G_+,G_-\in\calG_{\beta,L}$ and
+\[
+\theta(G_+)=\frac\delta2,
+\qquad
+\theta(G_-)=-\frac\delta2.
+\]
+Writing $P_+=K_nG_+$ and $P_-=K_nG_-$, joint convexity of squared Hellinger distance and invariance under reversal of the count labels give
+\begin{align}
+h^2(P_+,P_-)
+&\le
+\frac12h^2(K_nG,K_nH)
++
+\frac12h^2(K_nH^\dagger,K_nG^\dagger)
+\notag\\
+&=
+h^2(K_nG,K_nH)
+\le\eps^2.
+\label{eq:symmetrized-hellinger}
+\end{align}
+
+For probability measures $P$ and $R$, write
+\[
+\rho(P,R):=\sum_x\sqrt{P(x)R(x)}
+=1-\frac12h^2(P,R)
+\]
+for their Hellinger affinity.  Affinity factorizes over product measures, so
+\begin{align}
+h^2(P^{\otimes Q},R^{\otimes Q})
+&=
+2\{1-\rho(P,R)^Q\}\notag\\
+&=
+2\left\{1-\left(1-\frac12h^2(P,R)\right)^Q\right\}
+\le
+Qh^2(P,R).
+\label{eq:product-hellinger}
+\end{align}
+The last inequality is Bernoulli's inequality.  Under the present Hellinger convention, Cauchy--Schwarz also gives
+\begin{align}
+\TV(P,R)
+&=
+\frac12\sum_x
+|\sqrt{P(x)}-\sqrt{R(x)}|
+(\sqrt{P(x)}+\sqrt{R(x)})\notag\\
+&\le
+h(P,R)\sqrt{1-\frac14h^2(P,R)}
+\le h(P,R).
+\label{eq:TV-le-hellinger}
+\end{align}
+Combining \eqref{eq:symmetrized-hellinger}--\eqref{eq:TV-le-hellinger} with $\eps=(2\sqrt Q)^{-1}$ yields
+\begin{equation}
+\label{eq:product-TV-small}
+\TV(P_+^{\otimes Q},P_-^{\otimes Q})
+\le\frac12.
+\end{equation}
+
+Now fix any, possibly randomized, decision rule $\widehat\sigma$.  Because a wrong decision costs $\delta/2$ under either $G_+$ or $G_-$ \aed{(recall \eqref{eq:scalar-decision-loss})},
+\begin{align}
+\sup_{F\in\calG_{\beta,L}}
+\E_F\mathcal L_F(\widehat\sigma)
+&\ge
+\frac12\left\{
+\E_{G_+}\mathcal L_{G_+}(\widehat\sigma)
++
+\E_{G_-}\mathcal L_{G_-}(\widehat\sigma)
+\right\}\notag\\
+&=
+\frac\delta4\left\{
+P_+^{\otimes Q}(\widehat\sigma=-1)
++
+P_-^{\otimes Q}(\widehat\sigma=+1)
+\right\}\notag\\
+&\ge
+\frac\delta4
+\left\{1-\TV(P_+^{\otimes Q},P_-^{\otimes Q})\right\}
+\ge
+\frac\delta8.
+\label{eq:decision-le-cam}
+\end{align}
+The penultimate inequality is Le Cam's two-point inequality.  Since \eqref{eq:decision-le-cam} holds for every admissible pair $G,H$ and every decision rule, taking first the infimum over $\widehat\sigma$ and then the supremum over all pairs in the definition of the modulus gives
+\[
+\calR^{\mathrm{dec}}_{Q,n}(\beta,L)
+\ge
+\frac18\,
+\omega_{n,\beta,L}\!\left(\frac{1}{2\sqrt Q}\right).
+\]
+Finally, \cref{lem:modulus-scaling} \aed{gives} %implies
+\[
+\omega_{n,\beta,L}\!\left(\frac{1}{2\sqrt Q}\right)
+\ge
+\frac14\omega_{n,\beta,L}(Q^{-1/2}),
+\]
+which proves the lower bound in \eqref{eq:scalar-modulus-chain}.
+\end{proof}
+
+\section{Finite-sample scalar bounds}
+\label{app:finite-lower}
+
+\begin{proof}[Proof of \cref{thm:rootQ-scalar}]
+Take the two distributions $G_{\sigma,\eta}$ displayed after the proposition.  Conditional on $Z=+1$, the count is deterministically $S=n$, while conditional on $Z=-1$, it is $S=0$.  Hence $K_nG_{+1,\eta}$ assigns masses $(1-\eta)/2$ and $(1+\eta)/2$ to $0$ and $n$, respectively, while $K_nG_{-1,\eta}$ interchanges these masses.  Therefore
+\[
+h^2(K_nG_{+1,\eta},K_nG_{-1,\eta})
+=
+2-2\sqrt{1-\eta^2}
+\le
+2\eta^2.
+\]
+For $0<\eps\le1$, take $\eta=\eps/2$.  The two channel laws are then within Hellinger distance $\eps$, whereas
+\[
+|\theta(G_{+1,\eta})-\theta(G_{-1,\eta})|
+=2\eta=\eps.
+\]
+Both measures belong to $\calG_{\beta,L}$ for every $\beta>0$ and $L\ge1$, proving \eqref{eq:rootQ-modulus}.  The minimax conclusion \eqref{eq:rootQ-scalar} follows from the lower bound in \cref{thm:scalar-modulus}.
+\end{proof}
+
+\begin{proof}[Proof of \cref{thm:pooled-lower}]
+Consider the fixed family
+\[
+\mathfrak G_\beta
+:=
+\{G_{\sigma,m}:\sigma\in\{-1,+1\},\ 0<m\le1/2\},
+\qquad
+G_{\sigma,m}
+=
+\frac{1-m^\beta}{2}(\delta_{-1}+\delta_{+1})
++m^\beta\delta_{\sigma m}.
+\]
+For $0<t<m$ there is no mass in $[-t,t]$, while for $m\le t<1$ the mass is $m^\beta\le t^\beta$.  Hence the family lies in $\calG_{\beta,L}$, independently of $Q,n$, and $\theta(G_{\sigma,m})=\sigma m^\beta$.
+
+Let $P_{\sigma,m}=K_nG_{\sigma,m}$.  Augmenting the observation by revealing whether the latent draw came from the central component and then applying data processing gives
+\[
+\KL(P_{+1,m}\|P_{-1,m})
+\le
+m^\beta
+\KL\!\left(
+\Bin\left(n,\frac{1+m}{2}\right)
+\middle\|
+\Bin\left(n,\frac{1-m}{2}\right)
+\right)
+\le 4nm^{\beta+2},
+\]
+where the last inequality uses
+\[
+\KL\!\left(
+\Ber\left(\frac{1+m}{2}\right)
+\middle\|
+\Ber\left(\frac{1-m}{2}\right)
+\right)
+=
+m\log\frac{1+m}{1-m}
+\le4m^2
+\]
+for $m\le1/2$.  Since squared Hellinger distance is bounded by Kullback--Leibler divergence, taking
+\[
+m
+=
+\left(\frac{\eps^2}{16n}\right)^{1/(\beta+2)}
+\]
+for $\eps\le c_0(\beta)$ ensures both $m\le1/2$ and $h(P_{+1,m},P_{-1,m})\le\eps$.  Meanwhile,
+\[
+|\theta(G_{+1,m})-\theta(G_{-1,m})|
+=2m^\beta
+\asymp_\beta
+\left(\frac{\eps^2}{n}\right)^{\beta/(\beta+2)}.
+\]
+This proves \eqref{eq:pooled-modulus-lower}.  Its minimax consequence follows from \cref{thm:scalar-modulus}, monotonicity of the modulus, and a fixed reduction of the constant multiplying $Q^{-1/2}$ when necessary.
+\end{proof}
+
+\begin{proof}[Proof of \cref{thm:plugin-scalar}]
+Conditional on $Z=z$, Hoeffding's inequality gives
+\[
+\Pp_z\{\widehat\xi\ne\sgn(z)\}
+\le e^{-nz^2/2}.
+\]
+Consequently,
+\[
+|\E_G\widehat\xi-\theta(G)|
+\le2\E_G e^{-nZ^2/2}
+\lesssim_{\beta,L}n^{-\beta/2},
+\]
+where the last step follows by integrating over dyadic shells and using $G([-t,t])\le Lt^\beta$.  Since $|\widehat\xi_j|\le1$, the expected fluctuation of their average is at most $Q^{-1/2}$.
+\end{proof}
+
+\section{Transfer from count-only to observed-question experiments}
+\label{app:observed-transfer}
+
+This appendix proves Lemmas~\ref{lem:equal-weight-discretization} and~\ref{lem:permutation-embedding}, Theorem~\ref{thm:observed-transfer}, and Corollary~\ref{cor:general-lower-transfer}.  The argument is fully frequentist: the random permutation is used only to define a prior supported on deterministic maps, and minimax risk is lower-bounded by the corresponding Bayes risk.
+
+\subsection{Equal-weight approximation inside the margin class}
+
+\begin{lemma}[Equal-weight discretization preserving the margin class]
+\label{lem:equal-weight-discretization}
+For every $G\in\calG_{\beta,L}$ and every integer $M\ge1$, there is an equal-weight measure
+\[
+G^{(M)}
+=
+\frac1M\sum_{r=1}^M\delta_{z_r}
+\in\calG_{\beta,L}
+\]
+such that
+\[
+|\theta(G^{(M)})-\theta(G)|\le M^{-1},
+\qquad
+G^{(M)}\Rightarrow G
+\quad\text{as }M\to\infty.
+\]
+Consequently, for every fixed $n$,
+\[
+\TV(K_nG^{(M)},K_nG)\to0.
+\]
+If $H$ is the reflection of $G$ under $z\mapsto-z$, the approximations may be chosen so that $H^{(M)}$ is the reflection of $G^{(M)}$.
+\end{lemma}
+
+\begin{proof}[Proof of Lemma~\ref{lem:equal-weight-discretization}]
+Because $G\in\calG_{\beta,L}$, $G(\{0\})=0$.  Write
+\[
+p_+=G((0,1]),
+\qquad
+p_-=G([-1,0)),
+\qquad
+p_++p_-=1,
+\]
+and define the one-sided small-ball functions
+\[
+F_+(t)=G((0,t]),
+\qquad
+F_-(t)=G([-t,0)),
+\qquad 0<t\le1.
+\]
+Choose an integer $m_+$ nearest to $Mp_+$ and put $m_-=M-m_+$.  Then
+\begin{equation}
+\label{eq:side-mass-rounding}
+\left|\frac{m_+}{M}-p_+\right|\le\frac1{2M},
+\qquad
+\left|\frac{m_-}{M}-p_-\right|\le\frac1{2M}.
+\end{equation}
+Let
+\[
+k_+=\lfloor Mp_+\rfloor,
+\qquad
+k_-=\lfloor Mp_-\rfloor,
+\qquad
+e_+=m_+-k_+,
+\qquad
+e_-=m_--k_-.
+\]
+Then $e_+,e_-\in\{0,1\}$ and $e_++e_-\in\{0,1\}$.  For $j=1,\dots,k_+$ and $j=1,\dots,k_-$, respectively, define outward quantiles
+\[
+x_j^+
+=
+\inf\{t\in(0,1]:F_+(t)\ge j/M\},
+\qquad
+x_j^-
+=
+\inf\{t\in(0,1]:F_-(t)\ge j/M\}.
+\]
+Now set
+\begin{equation}
+\label{eq:outward-quantile-measure}
+G^{(M)}
+=
+\frac1M
+\left\{
+\sum_{j=1}^{k_+}\delta_{x_j^+}
++
+\sum_{j=1}^{k_-}\delta_{-x_j^-}
++
+e_+\delta_{+1}
++
+e_-\delta_{-1}
+\right\}.
+\end{equation}
+For every $0<t<1$, the generalized-inverse property gives
+\[
+G^{(M)}((0,t])
+=
+\frac{\lfloor MF_+(t)\rfloor}{M},
+\qquad
+G^{(M)}([-t,0))
+=
+\frac{\lfloor MF_-(t)\rfloor}{M}.
+\]
+The possible extra atoms at $\pm1$ are not counted.  Therefore
+\[
+G^{(M)}([-t,t])
+\le
+F_+(t)+F_-(t)
+=
+G([-t,t])
+\le
+Lt^\beta.
+\]
+At $t=1$, the required inequality is $1\le L$.  Hence $G^{(M)}\in\calG_{\beta,L}$ with exactly the same margin constant.
+
+The positive mass of $G^{(M)}$ is $m_+/M$, so \eqref{eq:side-mass-rounding} gives
+\[
+|\theta(G^{(M)})-\theta(G)|
+=
+2\left|\frac{m_+}{M}-p_+\right|
+\le M^{-1}.
+\]
+The two displayed subdistribution identities also show convergence at every continuity point of $G$; together with the side-mass rounding, they imply $G^{(M)}\Rightarrow G$.  Each coordinate of $K_nG$ is the integral of a bounded continuous polynomial in $z$, so coordinatewise convergence on the finite output alphabet gives
+\[
+\TV(K_nG^{(M)},K_nG)\to0.
+\]
+Finally, if $H$ is the reflection of $G$, define $H^{(M)}$ to be the reflection of $G^{(M)}$.
+\end{proof}
+
+\subsection{A finite-population permutation coupling}
+
+\begin{lemma}[Random-permutation embedding]
+\label{lem:permutation-embedding}
+Let $G_M=M^{-1}\sum_{r=1}^M\delta_{z_r}$ be an equal-weight measure.  Partition $[0,1]$ into $M$ intervals $I_1,\dots,I_M$ of equal length.  Draw a uniform random permutation $\Pi$ of $[M]$ and define the deterministic map
+\[
+Z_\Pi(q)=z_{\Pi(r)},
+\qquad q\in I_r.
+\]
+Let $\overline{\mathbb P}^{Q,n}_{G_M,M}$ be the law of the full sample in \eqref{eq:full-observed-scalar} after averaging over $\Pi$.  Then
+\begin{equation}
+\label{eq:permutation-TV}
+\TV\!\left(
+\overline{\mathbb P}^{Q,n}_{G_M,M},
+\lambda^{\otimes Q}\otimes(K_nG_M)^{\otimes Q}
+\right)
+\le
+3\alpha_{Q,M},
+\qquad
+\alpha_{Q,M}
+:=
+1-\frac{(M)_Q}{M^Q}
+\le
+\frac{Q(Q-1)}{2M},
+\end{equation}
+where $(M)_Q=M(M-1)\cdots(M-Q+1)$, with $(M)_Q=0$ when $Q>M$.
+\end{lemma}
+
+\begin{proof}[Proof of Lemma~\ref{lem:permutation-embedding}]
+If $Q>M$, the right side of \eqref{eq:permutation-TV} is at least one and the claim is trivial.  Assume henceforth that $Q\le M$.
+
+Let $R_j\in[M]$ be the index of the interval containing $q_j$.  Under both laws in \eqref{eq:permutation-TV}, the variables $R_1,\dots,R_Q$ are iid uniform on $[M]$, and conditional on $R_j=r$, the location of $q_j$ inside $I_r$ is uniform and carries no further information.
+
+Augment the prior-averaged full experiment by the latent indices
+\[
+J_j=\Pi(R_j).
+\]
+Conditional on $J_j$, the count $S_j$ is generated through the binomial channel corresponding to $z_{J_j}$.  Augment the comparison experiment by iid indices $J_1,\dots,J_Q\sim\operatorname{Unif}[M]$, independent of the $R_j$'s, and use the same channel.
+
+Let $A$ be the event that $R_1,\dots,R_Q$ are all distinct.  In the permutation experiment, conditional on $A$, the vector $(J_1,\dots,J_Q)$ is a uniformly ordered sample without replacement from $[M]$ and is independent of the ordered distinct vector $(R_1,\dots,R_Q)$.  Let $E$ be the event, in the comparison experiment, that both the $R_j$'s and the $J_j$'s are distinct.  Conditional on $E$, the two ordered vectors are independent uniformly ordered samples without replacement.  The conditional locations within cells and the conditional count channels are also identical.  Hence the two augmented conditional laws agree exactly:
+\[
+\mathcal L_{\mathrm{perm}}((q,R,J,S)\mid A)
+=
+\mathcal L_{\mathrm{iid}}((q,R,J,S)\mid E).
+\]
+The probability of a collision in one iid sample of $Q$ indices is
+\[
+\alpha_{Q,M}
+=
+1-\frac{(M)_Q}{M^Q}
+\le
+\binom Q2\frac1M.
+\]
+Using the elementary inequality $\TV(P,P(\cdot\mid B))\le P(B^c)$ and the triangle inequality,
+\begin{align*}
+\TV(\mathcal L_{\mathrm{perm}}(q,R,J,S),
+     \mathcal L_{\mathrm{iid}}(q,R,J,S))
+&\le
+\pr_{\mathrm{perm}}(A^c)
++
+\pr_{\mathrm{iid}}(E^c)\\
+&=
+\alpha_{Q,M}
++
+\{1-(1-\alpha_{Q,M})^2\}\\
+&\le3\alpha_{Q,M}.
+\end{align*}
+Discarding the latent indices and cell labels is a Markov kernel and cannot increase total variation.  The remaining iid comparison law is exactly $\lambda^{\otimes Q}\otimes(K_nG_M)^{\otimes Q}$, proving \eqref{eq:permutation-TV}.
+\end{proof}
+
+\subsection{Least-favorable priors and the transfer theorem}
+
+\begin{proof}[Proof of Theorem~\ref{thm:observed-transfer}]
+The upper inequality is \eqref{eq:obs-le-count}.  We prove the lower inequality.
+
+Use the Hellinger convention in \eqref{eq:modulus}.  Fix
+\[
+\varepsilon_Q=\frac{1}{64\sqrt Q}
+\]
+and take any $0<\Delta<\omega_{n,\beta,L}(\varepsilon_Q)$.  By the reflection symmetrization used in the proof of Theorem~\ref{thm:scalar-modulus}, there exist $G_+,G_-\in\calG_{\beta,L}$ such that
+\begin{equation}
+\label{eq:transfer-hard-pair}
+G_-=G_+^\dagger,
+\qquad
+\theta(G_+)=a,
+\qquad
+\theta(G_-)=-a,
+\qquad
+a>\Delta/2,
+\qquad
+h(K_nG_+,K_nG_-)\le\varepsilon_Q,
+\end{equation}
+where $\dagger$ denotes reflection under $z\mapsto-z$.
+
+Apply Lemma~\ref{lem:equal-weight-discretization} to $G_+$ and reflect the result to obtain equal-weight $G^{(M)}_+$ and $G^{(M)}_-$.  Because the target and channel laws converge, and because $M$ may be taken arbitrarily large, choose $M$ so that
+\begin{equation}
+\label{eq:transfer-M-choices}
+\theta(G^{(M)}_+)\ge\Delta/4,
+\qquad
+h(K_nG^{(M)}_+,K_nG_+)\le\varepsilon_Q,
+\qquad
+6\alpha_{Q,M}\le\frac18.
+\end{equation}
+Reflection gives the analogous channel bound for the negative hypothesis and $\theta(G^{(M)}_-)=-\theta(G^{(M)}_+)$.  The triangle inequality yields
+\[
+h(K_nG^{(M)}_+,K_nG^{(M)}_-)
+\le3\varepsilon_Q.
+\]
+For product measures under our Hellinger convention,
+\[
+h^2(P^{\otimes Q},Q^{\otimes Q})
+\le
+Qh^2(P,Q),
+\]
+and $\TV(P,Q)\le h(P,Q)$.  Hence
+\begin{equation}
+\label{eq:transfer-product-TV}
+\TV\!\left(
+(K_nG^{(M)}_+)^{\otimes Q},
+(K_nG^{(M)}_-)^{\otimes Q}
+\right)
+\le
+\frac{3}{64}.
+\end{equation}
+
+For each sign, place the uniform-permutation prior of Lemma~\ref{lem:permutation-embedding} on the deterministic maps whose pushforward is $G^{(M)}_+$ or $G^{(M)}_-$.  Denote the resulting prior-averaged full-data laws by $\overline{\mathbb P}_+$ and $\overline{\mathbb P}_-$.  Every map in the support belongs to $\mathfrak Z_{\beta,L}$ and has target respectively $+a_M$ or $-a_M$, where $a_M:=\theta(G^{(M)}_+)\ge\Delta/4$.  Combining Lemma~\ref{lem:permutation-embedding} with \eqref{eq:transfer-product-TV},
+\[
+\TV(\overline{\mathbb P}_+,\overline{\mathbb P}_-)
+\le
+6\alpha_{Q,M}+\frac{3}{64}
+<\frac12.
+\]
+
+For any decision rule $\widehat\sigma$ based on the full observed sample, its Bayes regret under the prior that gives probability one half to each sign and then draws the corresponding random permutation is
+\begin{align*}
+\mathcal B(\widehat\sigma)
+&=
+\frac{a_M}{2}
+\left\{
+\overline{\mathbb P}_+(\widehat\sigma=-1)
++
+\overline{\mathbb P}_-(\widehat\sigma=+1)
+\right\}\\
+&\ge
+\frac{a_M}{2}
+\{1-\TV(\overline{\mathbb P}_+,\overline{\mathbb P}_-)\}\\
+&\ge
+\frac{\Delta}{16}.
+\end{align*}
+The minimax risk is at least the Bayes risk of any prior supported on the parameter class.  Therefore
+\[
+\calR^{\mathrm{obs}}_{Q,n}(\beta,L)
+\ge
+\frac1{16}\omega_{n,\beta,L}\!\left(\frac{1}{64\sqrt Q}\right).
+\]
+This proves \eqref{eq:observed-transfer} with the stated universal constants.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:general-lower-transfer}]
+In this submodel the clean margin of $w$ is
+\[
+M_q(w)=(w_1-w_2)Z(q).
+\]
+An optimal vertex is $e_1$ when $\theta_Z>0$ and $e_2$ when $\theta_Z<0$; at either choice,
+\[
+\Pp\{0<M_q(w^\star)\le t\}
+\le
+(Z_\#\lambda)([-t,t])
+\le Lt^\beta.
+\]
+Thus the embedded environments satisfy the one-sided comparator margin condition used in the general theorem.  Given an arbitrary weight estimator, define the induced scalar decision to be $+1$ when $\widehat w_1>\widehat w_2$ and $-1$ otherwise.  If $\widehat w_1\ne\widehat w_2$, choosing the wrong side incurs clean excess risk exactly $|\theta_Z|$.  If $\widehat w_1=\widehat w_2$, every question is tied and the clean excess risk is at least $|\theta_Z|$ whenever the fixed tie decision is wrong.  Hence, pointwise in the data,
+\[
+R_Z(\widehat w)-\inf_wR_Z(w)
+\ge
+|\theta_Z|\one\{\widehat\sigma\theta_Z<0\}.
+\]
+The generations of models $i\ge3$ are ancillary and can supply at most external randomization, which is already allowed in \eqref{eq:minimax-observed}.  Taking expectations, suprema, and infima proves the first inequality; the second follows from Corollary~\ref{cor:observed-modulus}.
+\end{proof}
+
+
+\section{Proof of the identification floor}
+\label{app:identification}
+
+\eed{Recall that $\Pi_n$ denotes the space of real algebraic polynomials of degree at most $n$.}
+
+\subsection{Localized polynomial approximation and the upper bound}
+
+\begin{lemma}[Localized Jackson polynomial]
+\label{lem:jackson}
+For every $s>0$, there is $C_s$ such that, for every integer $n\ge1$, there is $P_n\in\Pi_n$ satisfying
+\begin{equation}
+\label{eq:jackson-bound-paper}
+\norm{P_n}_{L_\infty[-1,1]}\le1,
+\qquad
+|P_n(x)-\sgn(x)|
+\le
+C_s\min\{1,(n|x|)^{-s}\}
+\end{equation}
+\eed{for every $x\in[-1,1]\setminus\{0\}$.}
+\end{lemma}
+
+\begin{proof}
+\eed{The key idea is to smooth the discontinuous sign function with a positive, normalized, finite-frequency Jackson kernel.  The resulting convolution is a bounded trigonometric polynomial that closely follows the sign function away from its jumps; evenness then converts it into an algebraic polynomial in $x=\cos\vartheta$.
+
+Let $f(\vartheta):=\sgn(\cos\vartheta)$ on the circle $\R/(2\pi\mathbb Z)$, and choose an integer $r$ such that $2r-1>s$.  For $m\ge2$, define
+\[
+J_{m,r}(u)
+:=c_{m,r}
+\left(\frac{\sin(mu/2)}{\sin(u/2)}\right)^{2r},
+\]
+where the quotient is interpreted continuously at zero.  \aed{The constant $c_{m,r}$ is chosen to give normalization $\frac1{2\pi} \int_{-\pi}^{\pi} J_{m,r}(u)\,\dd u=1$.}
+%The constant $c_{m,r}$ gives $J_{m,r}$ mass one with respect to normalized Lebesgue measure on the circle.
+
+\emph{Kernel properties.}
+Recall that the Fej\'er kernel satisfies
+\[
+F_m(u)
+:=\frac1m\left(\frac{\sin(mu/2)}{\sin(u/2)}\right)^2
+=
+\sum_{k=-(m-1)}^{m-1}
+\left(1-\frac{|k|}{m}\right)e^{iku}.
+\]
+Since $J_{m,r}=c_{m,r}m^rF_m^r$, it is nonnegative, even, and a trigonometric polynomial of degree $d:=r(m-1)$.
+
+To determine its normalization scale, put $K_{m,r}^0(u):=(\sin(mu/2)/\sin(u/2))^{2r}$.  On $|u|\le1/m$, one has $K_{m,r}^0(u)\asymp_r m^{2r}$, while for $0<|u|\le\pi$, the inequalities $|\sin(u/2)|\ge|u|/\pi$ and $|\sin(mu/2)|\le1$ give $K_{m,r}^0(u)\lesssim_r|u|^{-2r}$.  Splitting the integral at $1/m$ therefore yields
+\[
+\frac1{2\pi}\int_{-\pi}^{\pi}K_{m,r}^0(u)\,\dd u
+\asymp_r m^{2r-1},
+\qquad
+c_{m,r}\asymp_r m^{-(2r-1)}.
+\]
+Only the resulting upper bound on $c_{m,r}$ is needed below.  We next bound the tail.  If $a\le1/m$, normalized total mass bounds it by one; if $a>1/m$, the preceding pointwise and normalization bounds give
+\[
+\frac1{2\pi}\int_{|u|\ge a}J_{m,r}(u)\,\dd u
+\lesssim_r
+m^{-(2r-1)}\int_a^\pi u^{-2r}\,\dd u
+\lesssim_r
+(ma)^{-(2r-1)}.
+\]
+Thus, for every $0<a\le\pi$,
+\begin{equation}
+\label{eq:jackson-tail-paper}
+\frac1{2\pi}\int_{|u|\ge a}J_{m,r}(u)\,\dd u
+\le
+C_r\min\{1,(ma)^{-(2r-1)}\},
+\qquad 0<a\le\pi.
+\end{equation}
+
+\emph{Finite-frequency smoothing.}
+Define
+\[
+T_m(\vartheta)
+:=
+\frac1{2\pi}\int_{-\pi}^{\pi}
+f(\vartheta-u)J_{m,r}(u)\,\dd u.
+\]
+Since $J_{m,r}\ge0$ and has normalized mass one, $T_m(\vartheta)$ is a weighted average of values in $[-1,1]$, so $|T_m(\vartheta)|\le1$.  Write $J_{m,r}(u)=\sum_{|k|\le d}j_ke^{iku}$.  The convolution identity gives
+\[
+T_m(\vartheta)
+=
+\sum_{|k|\le d}j_k\widehat f(k)e^{ik\vartheta},
+\]
+where $\widehat f(k)$ is the $k$th Fourier coefficient of $f$.  Thus $T_m$ is a trigonometric polynomial of degree at most $d$.  Because both $f$ and $J_{m,r}$ are even, so is $T_m$, and hence it has a cosine expansion $T_m(\vartheta)=a_0+\sum_{k=1}^da_k\cos(k\vartheta)$.  If $\mathsf T_k$ denotes the $k$th Chebyshev polynomial, define $P(x):=a_0+\sum_{k=1}^da_k\mathsf T_k(x)$.  Then $P$ has degree at most $d$ and
+\[
+T_m(\vartheta)=P(\cos\vartheta),
+\qquad
+\norm P_{L_\infty[-1,1]}\le1.
+\]
+
+\emph{Localized approximation error.}
+Let $a(\vartheta)$ denote the circular distance from $\vartheta$ to the nearest discontinuity of $f$, namely $\pi/2$ or $3\pi/2$.  Whenever $|u|<a(\vartheta)$, the values $f(\vartheta-u)$ and $f(\vartheta)$ agree.  Therefore \eqref{eq:jackson-tail-paper} implies
+\[
+\begin{aligned}
+|T_m(\vartheta)-f(\vartheta)|
+&\le
+\frac2{2\pi}\int_{|u|\ge a(\vartheta)}J_{m,r}(u)\,\dd u\\
+&\le
+C_r\min\{1,(m a(\vartheta))^{-(2r-1)}\}.
+\end{aligned}
+\]
+If $x=\cos\vartheta$, then $|x|=\sin a(\vartheta)\le a(\vartheta)$.  For $n\ge2r$, take $m=1+\lfloor n/r\rfloor$.  Then $d=r(m-1)\le n$ and $m\ge n/r$.  Since $2r-1>s$, the last display implies \eqref{eq:jackson-bound-paper}, after enlarging the constant.  For the finitely many integers $1\le n<2r$, take $P_n\equiv0$ and enlarge $C_s$.}
+\end{proof}
+
+\eed{The estimate \aed{in Lemma~\ref{lem:jackson}} is intentionally nonuniform: it gives only a constant bound in the boundary layer $|x|\lesssim n^{-1}$, but outside that layer the error decays at any prescribed fixed polynomial order in $n|x|$.}
+
+\begin{lemma}[Integrated approximation under a margin condition]
+\label{lem:integrated-approx-paper}
+If $G\in\calG_{\beta,L}$ and $s>\beta$ in \cref{lem:jackson}, then, for every $n\ge1$,
+\begin{equation}
+\label{eq:integrated-approx-paper}
+\int|P_n(z)-\sgn(z)|\,\dd G(z)
+\le C_{\beta,L,s}n^{-\beta}.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+%Put $U=|Z|$.  On $U\le n^{-1}$,
+\aed{For $|z|\le n^{-1}$},
+ the integrand is bounded by two and the margin condition gives probability at most $Ln^{-\beta}$.  On the dyadic shell
+\[
+\frac{2^j}{n}<
+%U
+\aed{|z|}
+\le \min\left\{\frac{2^{j+1}}n,1\right\},
+\]
+the pointwise error is at most $C_s2^{-js}$ and the shell probability is at most $L(2^{j+1}/n)^\beta$ until the upper endpoint reaches one.  Consequently,
+\[
+\int|P_n-\sgn|\,\dd G
+\le
+Ln^{-\beta}
+\biggl[2+C_s2^\beta\sum_{j\ge0}2^{j(\beta-s)}\biggr]
+\le
+C_{\beta,L,s}n^{-\beta},
+\]
+because $s>\beta$, proving \eqref{eq:integrated-approx-paper}.
+\end{proof}
+
+\begin{proof}[Proof of the upper bound in \cref{thm:identification-floor}]
+\eed{Suppose $K_nG=K_nH$.  By \cref{lem:moment-equivalence}, $G$ and $H$ integrate every polynomial of degree at most $n$ equally.  Fix $s=\beta+1$ and let $P_n$ be the corresponding polynomial from \cref{lem:jackson}.  Then
+\begin{align*}
+|\theta(G)-\theta(H)|
+&=
+\left|
+\int(\sgn-P_n)\,\dd G
+-
+\int(\sgn-P_n)\,\dd H
+\right|\\
+&\le
+\int|\sgn-P_n|\,\dd G
++
+\int|\sgn-P_n|\,\dd H \;\le\;
+C_{\beta,L}n^{-\beta}
+\end{align*}
+by \cref{lem:integrated-approx-paper}.  Taking the supremum over all pairs with $K_nG=K_nH$ proves the upper bound on $\omega_{n,\beta,L}(0)$.}
+\end{proof}
+
+\subsection{Weighted \texorpdfstring{$L_1$}{L1} approximation of the jump}
+
+Let
+\[
+\mu_\beta(\dd x)
+=
+\frac\beta2|x|^{\beta-1}\one_{[-1,1]}(x)\,\dd x.
+\]
+We use the following specialization of the matching direct and inverse weighted polynomial-approximation theorem of \citet{Kopotun}.
+
+\begin{lemma}[Weighted $L_1$ approximation of a jump]
+\label{lem:weighted-sign-paper}
+There are $0<c_\beta<C_\beta<\infty$ such that
+\begin{equation}
+\label{eq:weighted-sign-rate-paper}
+c_\beta n^{-\beta}
+\le
+E_n(\beta)
+:=
+\inf_{P\in\Pi_n}
+\int|\sgn(x)-P(x)|\,\dd\mu_\beta(x)
+\le
+C_\beta n^{-\beta}.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+\eed{The upper bound follows from \cref{lem:jackson,lem:integrated-approx-paper}, because $\mu_\beta([-t,t])=t^\beta$.
+
+We now spell out the lower bound from the matching direct and inverse theorem of \citet[Theorems~5.2 and~9.1, Corollary~11.1]{Kopotun}.  The power weight
+\[
+w_\beta(x):=|x|^{\beta-1}
+\]
+is a doubling generalized-Jacobi weight with a single zero or singularity at zero and belongs to the class treated there.  Fix an integer $r>\beta$.  For a fixed sufficiently large localization constant $A$, Kopotun's complete weighted modulus $\omega_\varphi^r(f,A,t)_{1,w_\beta}$ satisfies
+\begin{align}
+E_m(f)_{1,w_\beta}
+&\le
+C\,\omega_\varphi^r(f,A,m^{-1})_{1,w_\beta},
+\label{eq:kopotun-direct-paper}\\
+\omega_\varphi^r(f,A,m^{-1})_{1,w_\beta}
+&\le
+C m^{-r}\sum_{k=1}^m k^{r-1}E_k(f)_{1,w_\beta}.
+\label{eq:kopotun-inverse-paper}
+\end{align}
+Here and below, a shift of one in the convention for the degree of the approximation space changes only constants.
+
+For $f=\sgn$, the complete modulus has the elementary scale
+\begin{equation}
+\label{eq:sign-complete-modulus-paper}
+\omega_\varphi^r(\sgn,A,t)_{1,w_\beta}
+\asymp
+t^\beta,
+\qquad 0<t\le t_\beta.
+\end{equation}
+Indeed, away from the excluded $O(t)$-neighborhood of the only singular point zero, $\sgn$ is locally constant, so the main-part $r$th-difference term vanishes.  The remaining local term is the best approximation of $\sgn$ by a polynomial of degree less than $r$ on an interval $[-c_At,c_At]$.  This interval has width of order $t$ because Kopotun's local scale at zero is
+\[
+\rho(t,0)=t\sqrt{1-0^2}+t^2\asymp t.
+\]
+The zero polynomial gives the upper bound $Ct^\beta$.  For the lower bound, the substitution $x=tu$ gives
+\begin{align*}
+&\inf_{P\in\Pi_{r-1}}
+\int_{-c_At}^{c_At}
+|\sgn(x)-P(x)|\,|x|^{\beta-1}\,\dd x\\
+&\qquad=
+t^\beta
+\inf_{Q\in\Pi_{r-1}}
+\int_{-c_A}^{c_A}
+|\sgn(u)-Q(u)|\,|u|^{\beta-1}\,\dd u.
+\end{align*}
+The last infimum is strictly positive: $\Pi_{r-1}$ is a finite-dimensional closed subspace of the weighted $L_1$ space, whereas $\sgn$ is not equal almost everywhere to a polynomial.  This proves \eqref{eq:sign-complete-modulus-paper}.
+
+It remains to extract a pointwise lower bound for $E_n(\beta)$.  The upper half of the proof already gives
+\begin{equation}
+\label{eq:Ek-upper-paper}
+E_k(\beta)\le C_0k^{-\beta}.
+\end{equation}
+Apply \eqref{eq:kopotun-inverse-paper} with $m=Mn$, where $M\ge2$ is a fixed integer to be chosen.  By \eqref{eq:sign-complete-modulus-paper},
+\[
+c(Mn)^{-\beta}
+\le
+C(Mn)^{-r}\sum_{k=1}^{Mn}k^{r-1}E_k(\beta).
+\]
+Split the sum at $n$.  Using \eqref{eq:Ek-upper-paper} on the first part and monotonicity of best-approximation errors on the second gives
+\begin{align*}
+\sum_{k=1}^{n}k^{r-1}E_k(\beta)
+&\le C_1n^{r-\beta},\\
+\sum_{k=n+1}^{Mn}k^{r-1}E_k(\beta)
+&\le
+E_n(\beta)\sum_{k=n+1}^{Mn}k^{r-1}
+\le
+C_2(Mn)^rE_n(\beta).
+\end{align*}
+Consequently,
+\[
+cM^{-\beta}n^{-\beta}
+\le
+C_3M^{-r}n^{-\beta}+C_4E_n(\beta).
+\]
+Since $r>\beta$, choose the fixed $M$ large enough that $C_3M^{-r}\le(c/2)M^{-\beta}$.  Rearranging yields $E_n(\beta)\ge c_\beta n^{-\beta}$.  Decreasing $c_\beta$ handles the finitely many small values of $n$ not covered by \eqref{eq:sign-complete-modulus-paper}.}
+\end{proof}
+
+\begin{remark}[Approximation-theoretic input]
+\eed{The localized Jackson construction proves the direct half of \eqref{eq:weighted-sign-rate-paper} within the paper.  The genuinely imported ingredient is the weighted inverse inequality \eqref{eq:kopotun-inverse-paper}; the remaining steps specialize it to a single jump under the power weight and extract the pointwise rate.}
+\end{remark}
+
+\subsection{Duality and moment-matched alternatives}
+
+\begin{lemma}[$L_1$ duality produces reflected moment-matched alternatives]
+\label{lem:duality-moment-pair-paper}
+\eed{For every $n\ge1$, there are probability measures $G_{n,+}$ and $G_{n,-}$ on $[-1,1]$ such that:
+\begin{enumerate}[label=(\alph*)]
+\item their moments agree through degree $n$;
+\item $G_{n,\pm}([-t,t])\le2t^\beta$ for every $0<t\le1$;
+\item $G_{n,-}=G_{n,+}^\dagger$ and
+\[
+\theta(G_{n,+})
+=
+-\theta(G_{n,-})
+=
+E_n(\beta).
+\]
+\end{enumerate}}
+\end{lemma}
+
+\begin{proof}
+The polynomial-approximation error admits a dual certificate $h_n$ that annihilates every polynomial in $\Pi_n$ while being maximally correlated with $\sgn$.  Perturbing the reference measure in the directions $\pm h_n$ will then produce moment-matched distributions with oppositely separated targets.
+
+Let $f:=\sgn$ and use the dual pairing
+\[
+\langle g,h\rangle
+:=
+\int g(x)h(x)\,\dd\mu_\beta(x),
+\qquad
+g\in L_1(\mu_\beta),\quad h\in L_\infty(\mu_\beta).
+\]
+\eed{Since $E_n(\beta)$ is the $L_1$ distance from $f$ to the subspace $\Pi_n$, it has the following dual representation; see \cref{rem:l1-duality}.}
+\begin{equation}
+\label{eq:l1-duality-paper}
+E_n(\beta)
+=
+\max_{\substack{h\in L_\infty(\mu_\beta),\ \norm h_\infty\le1\\
+\langle P,h\rangle=0\ \text{for every }P\in\Pi_n}}
+\langle f,h\rangle.
+\end{equation}
+The maximum is attained by weak-$^*$ compactness.  We may choose a maximizer that is odd.  Indeed, if $h$ is feasible, then
+\[
+h_{\mathrm{odd}}(x):=\frac{h(x)-h(-x)}2
+\]
+is feasible, has $L_\infty$ norm at most one, and has the same objective value because $\mu_\beta$ is symmetric, $\Pi_n$ is reflection invariant, and $\sgn$ is odd.
+
+Let $h_n$ be such an odd maximizer and define
+\[
+\dd G_{n,+}:=(1+h_n)\dd\mu_\beta,
+\qquad
+\dd G_{n,-}:=(1-h_n)\dd\mu_\beta.
+\]
+These measures are nonnegative because $\norm{h_n}_\infty\le1$.  Orthogonality to the constant polynomial makes their total masses one; orthogonality to $x^j$, $j=0,\dots,n$, makes their moments equal.  Moreover,
+\[
+G_{n,\pm}([-t,t])
+\le
+2\mu_\beta([-t,t])
+=
+2t^\beta.
+\]
+Oddness gives $G_{n,-}=G_{n,+}^\dagger$.  Finally, symmetry of $\mu_\beta$ gives $\int\sgn\,\dd\mu_\beta=0$, so \eqref{eq:l1-duality-paper} gives
+\[
+\theta(G_{n,+})
+=
+\int\sgn(x)h_n(x)\,\dd\mu_\beta(x)
+=
+E_n(\beta),
+\]
+and reflection gives the target of $G_{n,-}$.
+\end{proof}
+
+\begin{remark}[Duality interpretation]
+\label{rem:l1-duality}
+\eed{Identity~\eqref{eq:l1-duality-paper} is the infinite-dimensional analogue of linear-programming duality.  Indeed, put $E:=\inf_{P\in\Pi_n}\norm{f-P}_{L_1(\mu_\beta)}$.  For every feasible $h$ and every $P\in\Pi_n$,
+\[
+\langle f,h\rangle
+=
+\langle f-P,h\rangle
+\le
+\norm{f-P}_{L_1(\mu_\beta)},
+\]
+so the dual value is at most $E$.  Hahn--Banach supplies a norm-one functional on $L_1(\mu_\beta)$ that annihilates $\Pi_n$ and takes the value $E$ at $f$.  Identifying $L_1(\mu_\beta)^*$ with $L_\infty(\mu_\beta)$ represents this functional by a feasible $h$ attaining equality, and hence establishes strong duality.}
+\end{remark}
+
+\begin{proof}[Proof of the lower bound in \cref{thm:identification-floor}]
+Let $G_{n,+},G_{n,-}$ be supplied by \cref{lem:duality-moment-pair-paper}, put
+\[
+\rho_L:=\min\{1,L/2\},
+\]
+and define
+\[
+H_{n,\pm}
+:=
+\rho_LG_{n,\pm}
++\frac{1-\rho_L}{2}(\delta_{-1}+\delta_{+1}).
+\]
+For every $0<t<1$, the outer atoms do not contribute and
+\[
+H_{n,\pm}([-t,t])
+\le
+2\rho_Lt^\beta
+\le
+Lt^\beta;
+\]
+at $t=1$, the required inequality is $1\le L$.  Thus $H_{n,\pm}\in\calG_{\beta,L}$.  Their moments through degree $n$ still agree because the same outer measure is added to both, and their targets are opposite with
+\[
+\theta(H_{n,+})
+=
+-\theta(H_{n,-})
+=
+\rho_LE_n(\beta)
+\ge
+c_{\beta,L}n^{-\beta}.
+\]
+By \cref{lem:moment-equivalence}, $K_nH_{n,+}=K_nH_{n,-}$, so this pair proves the lower bound on $\omega_{n,\beta,L}(0)$.
+\end{proof}
+
+\begin{remark}[Direct minimax consequence]
+\eed{The same pair also gives a direct proof of~\eqref{eq:N-only-lower} by a two-point argument.  Let
+\[
+\Pp_\pm
+:=
+(K_nH_{n,\pm})^{\otimes Q}
+\]
+denote the laws of the full $Q$-question experiment.  Moment equivalence gives $\Pp_+=\Pp_-$.  Hence, for every decision rule $\widehat\sigma$,
+\begin{align*}
+\sup_{G\in\calG_{\beta,L}}
+\E_G\mathcal L_G(\widehat\sigma)
+&\ge
+\frac{\rho_LE_n(\beta)}2
+\left[
+\Pp_+(\widehat\sigma=-1)
++
+\Pp_-(\widehat\sigma=+1)
+\right]\\
+&=
+\frac{\rho_LE_n(\beta)}2.
+\end{align*}
+The equality uses $\Pp_+=\Pp_-$ and $\widehat\sigma\in\{-1,+1\}$.  The prefactor $\rho_LE_n(\beta)$ is the cost of a wrong decision under either alternative, since $|\theta(H_{n,\pm})|=\rho_LE_n(\beta)$.  Taking the infimum over $\widehat\sigma$ gives $\calR^{\mathrm{dec}}_{Q,n}(\beta,L)\gtrsim_{\beta,L}n^{-\beta}$, independently of $Q$.}
+\end{remark}
+
+\section{Coefficient bounds and the Durrmeyer calculation}
+\label{app:coefficients}
+
+\subsection{Proof of the explicit exponential coefficient bound}
+
+Expand $P$ in Chebyshev polynomials,
+\[
+P(z)=c_0+\sum_{j=1}^dc_jT_j(z).
+\]
+If $\norm P_\infty\le1$, then $|c_0|\le1$ and $|c_j|\le2$.  Let $L_j$ be the sum of the absolute values of the monomial coefficients of $T_j$.  The recurrence
+\[
+T_{j+1}=2zT_j-T_{j-1}
+\]
+gives $L_j\le C(1+\sqrt2)^j$.  After substituting $z=2p-1$, a monomial $z^\ell$ has power-coefficient sum $3^\ell$, so the power-coefficient sum of $T_j(2p-1)$ is at most
+\[
+C\{3(1+\sqrt2)\}^j.
+\]
+Thus, writing $P(2p-1)=\sum_{j=0}^dr_jp^j$,
+\[
+\sum_j|r_j|\le C_0B_0^d
+\]
+for every fixed $B_0>3(1+\sqrt2)$; take $B_0=7.5$.  The identity
+\[
+p^j
+=
+\sum_{k=j}^d
+\frac{\binom kj}{\binom dj}b_{k,d}(p)
+\]
+converts power coefficients to degree-$d$ Bernstein coefficients using numbers in $[0,1]$, so each coefficient is bounded by the power-coefficient sum.  Degree elevation expresses every degree-$n$ coefficient as a convex combination of the degree-$d$ coefficients.  This proves \cref{lem:B0}.
+
+\subsection{Proof of the Durrmeyer spectral identity}
+\label{app:durrmeyer}
+
+The operator $D_n=T_nT_n^*$ is self-adjoint, positive, and preserves each polynomial space $\Pi_j$.  Its action on the leading term of a degree-$j$ polynomial is multiplication by
+\[
+\lambda_{j,n}
+=
+\frac{n!(n+1)!}{(n-j)!(n+j+1)!}.
+\]
+One way to see this is to apply $D_n$ to $p^j$ and compute the coefficient of $p^j$ using beta integrals and factorial moments of a binomial random variable.  Since $D_n$ is self-adjoint and degree preserving, the orthogonal complement of $\Pi_{j-1}$ inside $\Pi_j$ is invariant.  It is one-dimensional and spanned by the shifted Legendre polynomial $L_j$, proving \eqref{eq:durrmeyer-eigen}.
+
+For completeness, define
+\[
+v_j=\lambda_{j,n}^{-1/2}T_n^*L_j.
+\]
+Then
+\[
+\inner{v_i}{v_j}_{\nu_n}
+=
+\frac{1}{\sqrt{\lambda_{i,n}\lambda_{j,n}}}
+\inner{L_i}{D_nL_j}_{L_2}
+=\one\{i=j\},
+\]
+and
+\[
+T_nv_j=\sqrt{\lambda_{j,n}}L_j.
+\]
+Thus $(v_j,L_j,\sqrt{\lambda_{j,n}})$ is a singular system.  If $P=\sum_{j=0}^dc_jL_j$ and $T_na=P$, uniqueness gives
+\[
+a=\sum_{j=0}^d\frac{c_j}{\sqrt{\lambda_{j,n}}}v_j,
+\]
+which proves \eqref{eq:coefficient-spectral}.  Finally,
+\[
+\max_k|a_k|
+\le
+\sqrt{\sum_{k=0}^na_k^2}
+=
+\sqrt{n+1}\norm a_{\nu_n}
+\le
+\sqrt{n+1}\,\kappa_{d,n}\norm P_{L_2}.
+\]
+Applying the same bound to the maximum and minimum proves \eqref{eq:range-spectral}.
+
+For $d\le n/2$,
+\[
+\log\kappa_{d,n}
+=\frac12\sum_{r=0}^{d-1}
+\log\left(1+\frac{2r+2}{n-r}\right).
+\]
+Using $x/(1+x)\le\log(1+x)\le x$ and $n-r\asymp n$ gives \eqref{eq:kappa-asymp}.  At $d=n$,
+\[
+\kappa_{n,n}^2
+=\frac{(2n+1)!}{n!(n+1)!}
+=\binom{2n+1}{n},
+\]
+and Stirling's formula gives the endpoint asymptotic.
+
+\section{Warren's sign-pattern theorem}
+\label{app:warren}
+
+\begin{theorem}[Warren, informal constant form]
+Let $P_1,\dots,P_m$ be nonzero real polynomials of degree at most $d$ in $p$ real variables, with $m\ge p$.  The number of strict sign vectors
+\[
+\bigl(\sgn P_1(x),\dots,\sgn P_m(x)\bigr)\in\{-1,+1\}^m
+\]
+realized as $x$ ranges over $\R^p$ is at most
+\[
+2\left(\frac{2edm}{p}\right)^p.
+\]
+Variants that include zeros change only the universal constant.
+\end{theorem}
+
+The theorem is a polynomial analogue of the hyperplane-arrangement bound.  Taking logarithms gives complexity $O(p\log(dm/p))$.  In a prospective degree-$d$ surrogate for the general ensemble problem, $p=K-1$ and $m$ is proportional to the number of question--answer comparisons.  This is why the degree appears only logarithmically in the sign-pattern count.  The theorem does not address the separate inverse problem of estimating degree-$d$ polynomial moments from $N$ generations.
+
+\begin{thebibliography}{99}
+
+\bibitem[Audibert and Tsybakov(2007)]{AudibertTsybakov}
+J.-Y. Audibert and A.~B. Tsybakov.
+\newblock Fast learning rates for plug-in classifiers.
+\newblock \emph{The Annals of Statistics}, 35(2):608--633, 2007.
+\newblock doi:10.1214/009053606000001217.
+
+\bibitem[Basu et~al.(2026)Basu, Brill, and Yekutieli]{BasuBinomial}
+P. Basu, B. Brill, and D. Yekutieli.
+\newblock Exact confidence intervals for the mixing distribution from binomial mixture distribution samples.
+\newblock \emph{Journal of Computational and Graphical Statistics}, 35(2):880--890, 2026.
+\newblock doi:10.1080/10618600.2025.2573147.
+
+\bibitem[Brown et~al.(2024)Brown, Juravsky, Ehrlich, Clark, Le, R\'e, and Mirhoseini]{BrownMonkeys}
+B. Brown, J. Juravsky, R. Ehrlich, R. Clark, Q.~V. Le, C. R\'e, and A. Mirhoseini.
+\newblock Large language monkeys: Scaling inference compute with repeated sampling.
+\newblock arXiv:2407.21787, 2024.
+
+\bibitem[Cobbe et~al.(2021)Cobbe, Kosaraju, Bavarian, Chen, Jun, Kaiser, Plappert, Tworek, Hilton, Nakano, Hesse, and Schulman]{CobbeVerifiers}
+K. Cobbe, V. Kosaraju, M. Bavarian, M. Chen, H. Jun, L. Kaiser, M. Plappert, J. Tworek, J. Hilton, R. Nakano, C. Hesse, and J. Schulman.
+\newblock Training verifiers to solve math word problems.
+\newblock arXiv:2110.14168, 2021.
+
+\bibitem[Di et~al.(2025)Di, Ji, Li, Zhao, and Gu]{DiBestMajority}
+Q. Di, K. Ji, X. Li, H. Zhao, and Q. Gu.
+\newblock Best-of-majority: Minimax-optimal strategy for pass@$k$ inference scaling.
+\newblock arXiv:2510.03199, 2025.
+
+\bibitem[Donoho and Liu(1991)]{DonohoLiuII}
+D.~L. Donoho and R.~C. Liu.
+\newblock Geometrizing rates of convergence, II.
+\newblock \emph{The Annals of Statistics}, 19(2):633--667, 1991.
+\newblock doi:10.1214/aos/1176348114.
+
+\bibitem[Abel and Berdysheva(2010)]{DurrmeyerSpectral}
+U. Abel and E.~E. Berdysheva.
+\newblock Complete asymptotic expansion for multivariate Bernstein--Durrmeyer operators and quasi-interpolants.
+\newblock \emph{Journal of Approximation Theory}, 162(1):201--220, 2010.
+\newblock doi:10.1016/j.jat.2009.04.004.
+
+\bibitem[Huang et~al.(2025)Huang, Block, Liu, Jiang, Foster, and Krishnamurthy]{HuangBestN}
+A. Huang, A. Block, Q. Liu, N. Jiang, D.~J. Foster, and A. Krishnamurthy.
+\newblock Is Best-of-$N$ the best of them? Coverage, scaling, and optimality in inference-time alignment.
+\newblock In \emph{Proceedings of the 42nd International Conference on Machine Learning}, 2025.
+\newblock arXiv:2503.21878.
+
+\bibitem[Juditsky and Nemirovski(2009)]{JuditskyNemirovski}
+A.~B. Juditsky and A.~S. Nemirovski.
+\newblock Nonparametric estimation by convex programming.
+\newblock \emph{The Annals of Statistics}, 37(5A):2278--2300, 2009.
+\newblock doi:10.1214/08-AOS654.
+
+\bibitem[Komiyama et~al.(2026)Komiyama, Oba, and Oyamada]{KomiyamaBoInf}
+J. Komiyama, D. Oba, and M. Oyamada.
+\newblock Best-of-$\infty$: Asymptotic performance of test-time compute.
+\newblock In \emph{The Fourteenth International Conference on Learning Representations}, 2026.
+\newblock arXiv:2509.21091.
+
+\bibitem[Kopotun(2015)]{Kopotun}
+K.~A. Kopotun.
+\newblock Polynomial approximation with doubling weights having finitely many zeros and singularities.
+\newblock \emph{Journal of Approximation Theory}, 198:24--62, 2015.
+\newblock doi:10.1016/j.jat.2015.05.003.
+
+\bibitem[Massart and N\'ed\'elec(2006)]{MassartNedelec}
+P. Massart and E. N\'ed\'elec.
+\newblock Risk bounds for statistical learning.
+\newblock \emph{The Annals of Statistics}, 34(5):2326--2366, 2006.
+\newblock doi:10.1214/009053606000000786.
+
+\bibitem[Mukherjee et~al.(2026)Mukherjee, Bullo, Basu, and G\"und\"uz]{MukherjeeOT}
+A. Mukherjee, M. Bullo, D. Basu, and D. G\"und\"uz.
+\newblock Test-time verification via optimal transport: Coverage, ROC, and sub-optimality.
+\newblock In \emph{The Fourteenth International Conference on Learning Representations}, 2026.
+\newblock arXiv:2510.18982.
+
+\bibitem[Snell et~al.(2024)Snell, Lee, Xu, and Kumar]{SnellTestTime}
+C. Snell, J. Lee, K. Xu, and A. Kumar.
+\newblock Scaling LLM test-time compute optimally can be more effective than scaling model parameters.
+\newblock arXiv:2408.03314, 2024.
+
+\bibitem[Wang et~al.(2023)Wang, Wei, Schuurmans, Le, Chi, Narang, Chowdhery, and Zhou]{WangSelfConsistency}
+X. Wang, J. Wei, D. Schuurmans, Q.~V. Le, E.~H. Chi, S. Narang, A. Chowdhery, and D. Zhou.
+\newblock Self-consistency improves chain of thought reasoning in language models.
+\newblock In \emph{The Eleventh International Conference on Learning Representations}, 2023.
+\newblock arXiv:2203.11171.
+
+\bibitem[Warren(1968)]{Warren}
+H.~E. Warren.
+\newblock Lower bounds for approximation by nonlinear manifolds.
+\newblock \emph{Transactions of the American Mathematical Society}, 133(1):167--178, 1968.
+\newblock doi:10.1090/S0002-9947-1968-0226281-1.
+
+\end{thebibliography}
+
+\end{document}
